@@ -29,8 +29,10 @@ class Characteristics (GATTResponse):
     print "ok ...", handle
     print lib.hexdump(data)
 
+
 class GATT:
   Battery = "2a19"
+  Name = "2a00"
   class Radio:
     class Settings:
       Name = "d93b2af0-1e28-11e4-8c21-0800200c9a66"
@@ -46,10 +48,67 @@ class GATT:
       Send  = "2fb1a490-1942-11e4-8c21-0800200c9a66"
       Count = '41825a20-7402-11e4-8c21-0800200c9a66'
 
-class Link( object ):
+
+class GetName (object):
+  handle = GATT.Name
+  def __init__ (self, link):
+    self.link = link
+    self.resp = GATTResponse( )
+    # super(GATTResponse, self).__init__(self)
+  def operate (self):
+    self.link.requestor.read_by_uuid_async(self.handle, self.resp)
+    while not self.resp.received( ):
+      time.sleep(0.150)
+    self.received = self.resp.received
+    self.on_response(self.resp.received( )[0])
+
+  def on_response (self, name):
+    print "name is ", name
+    self.link.setName(name)
+
+
+
+class Channels:
+  class Pump:
+    RX = 0
+    TX = 2
+  class Stick:
+    RX = 2
+    TX = 0
+
+class Requester (GATTRequester):
+  def on_notification (self, handle, data):
+    print "notification", handle, data
+  def on_indication (self, handle, data):
+    print "indication", handle, data
+
+class Channel (object):
+  RX = Channels.Stick.RX
+  TX = Channels.Stick.TX
+  def __init__ (self, ble):
+    self.ble = ble
+
+  def __repr__ (self):
+    return """Channels:
+      RX: {RX}
+      TX: {TX}
+      """.format(RX=self.RX, TX=self.TX)
+  def setRX (self, channel):
+    result = self.ble.write_by_uuid(GATT.Radio.Settings.Channels.RX, channel)
+    self.RX = channel
+    return result
+  def setTX (self, channel):
+    result = self.ble.write_by_uuid(GATT.Radio.Settings.Channels.TX, channel)
+    self.TX = channel
+    return result
+
+class Link (object):
   __timeout__ = .500
   port = None
-  def __init__( self, mac, timeout=None ):
+  channel = None
+  requestor = None
+  _name = None
+  def __init__ (self, mac, timeout=None):
     if timeout is not None:
       self.__timeout__ = timeout
     self.mac = mac
@@ -61,14 +120,28 @@ class Link( object ):
     if 'timeout' not in kwds:
       kwds['timeout'] = self.__timeout__
 
-    self.requestor = GATTRequester(self.mac)
+    # self.requestor = GATTRequester(self.mac)
+    self.requestor = Requester(self.mac)
+    self.channel = Channel(self.requestor)
     time.sleep(.250)
+    if self._name is None:
+      self.fetch_name( )
     if not self.requestor.is_connected( ):
       try:
         self.requestor.connect( )
       except (RuntimeError ), e:
         pass
     self.setup_handles( )
+
+  def fetch_name (self):
+    req = GetName(self)
+    req.operate( )
+
+  def getName (self):
+    return self._name
+
+  def setName (self, name):
+    self._name = name
 
   def setup_handles (self):
     self.characteristics = self.get_characteristics( )
@@ -81,6 +154,16 @@ class Link( object ):
         self.send_handle = char['value_handle']
       if char['uuid'] == GATT.Radio.Packet.Count:
         self.packet_count = char['value_handle']
+      if GATT.Name in char['uuid']:
+        self.get_name_handle = char['value_handle']
+      if char['uuid'] == GATT.Radio.Settings.Name:
+        self.set_name_handle = char['value_handle']
+
+  def set_name (self, name):
+    return self.requestor.write_by_handle(self.set_name_handle, name)
+
+  def get_name (self):
+    return self.requestor.read_by_handle(self.get_name_handle)[0]
 
   def get_characteristics (self):
     return self.requestor.discover_characteristics( )
