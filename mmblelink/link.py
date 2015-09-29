@@ -48,6 +48,21 @@ class GATT:
       Send  = "2fb1a490-1942-11e4-8c21-0800200c9a66"
       Count = '41825a20-7402-11e4-8c21-0800200c9a66'
 
+class FetchName (GATTResponse):
+  handle = GATT.Name
+  data = None
+  def __init__ (self, link):
+    self.link = link
+    super(GATTResponse, self).__init__( )
+  def on_response (self, name):
+    print "fetched name is ", name
+    self.data = name
+    self.link.setName(name)
+  def operate (self):
+    self.link.requestor.read_by_uuid_async(self.handle, self)
+    while not self.received( ):
+      time.sleep(0.150)
+
 
 class GetName (object):
   handle = GATT.Name
@@ -55,18 +70,63 @@ class GetName (object):
     self.link = link
     self.resp = GATTResponse( )
     # super(GATTResponse, self).__init__(self)
+  def done (self):
+    return self.resp.received( ) or False
+  def sleep (self):
+    time.sleep(0.150)
+  def step (self):
+    self.sleep( )
+  def prolog (self):
+    self.received = self.resp.received( )
+    self.on_response(self.resp.received( )[0])
   def operate (self):
     self.link.requestor.read_by_uuid_async(self.handle, self.resp)
-    while not self.resp.received( ):
-      time.sleep(0.150)
-    self.received = self.resp.received
-    self.on_response(self.resp.received( )[0])
+    while not self.done( ):
+      self.step( )
+    self.prolog( )
 
   def on_response (self, name):
     print "name is ", name
     self.link.setName(name)
 
+class ReadOnce (GetName):
+  handle = GATT.Radio.Packet.Read
+  def on_response (self, data):
+    print "read once is {}".format(len(data))
+    print lib.hexdump(bytearray(data))
+  
 
+class DrainRXBuffer (GetName):
+  handle = GATT.Radio.Packet.Read
+  def done (self):
+    return False
+  def step (self):
+    print self.resp, self.resp.received( )
+    if self.resp.received( ):
+      self.on_response(self.resp.received( )[0])
+    self.sleep( )
+
+  def on_response (self, name):
+    print "data is ", lib.hexdump(bytearray(self.resp.received( )[0]))
+
+class CountPackets (GetName):
+  handle = GATT.Radio.Packet.Count
+  def on_response (self, data):
+    print "count:", ord(self.resp.received( )[0])
+
+class WatchPackets (DrainRXBuffer):
+  handle = GATT.Radio.Packet.Count
+  def on_response (self, name):
+    print "count:", ord(self.resp.received( )[0])
+
+
+class IterReader (WatchPackets):
+  def on_response (self, name):
+    count = ord(self.resp.received( )[0])
+    print "count:", count
+    # ReadOnce(self.link).operate( )
+    # DrainRXBuffer(self.link).operate( )
+    
 
 class Channels:
   class Pump:
@@ -136,7 +196,11 @@ class Link (object):
   def fetch_name (self):
     req = GetName(self)
     req.operate( )
+    # req.operate( )
 
+  def GetName (self):
+    req = GetName(self)
+    req.operate( )
   def getName (self):
     return self._name
 
@@ -181,6 +245,10 @@ class Link (object):
   def received (self):
     return ord(self.requestor.read_by_handle(self.packet_count)[0])
 
+  def dump_rx_buffer (self):
+    while link.received( ) > 0:
+      yield link.read( )
+      # print lib.hexdump(link.read( ))
   def read( self, c=64 ):
     r = self.requestor.read_by_handle(self.read_handle)
     io.info( 'usb.read.len: %s'   % ( len( r ) ) )
@@ -214,8 +282,26 @@ if __name__ == '__main__':
   else:
     link = Link(mac)
     link.open( )
-    while link.received( ) > 0:
-      print lib.hexdump(link.read( ))
+    while True:
+      op = CountPackets(link)
+      op.operate( )
+      count = ord(op.resp.received( )[0])
+      if count < 1:
+        print "sleeping"
+        time.sleep(.150)
+      else:
+        for buf in link.dump_rx_buffer( ):
+          print lib.hexdump(buf)
+
+    #while link.received( ) > 0:
+    #  print lib.hexdump(link.read( ))
+    #op = DrainRXBuffer(link)
+    #op.operate( )
+    op = CountPackets(link)
+    op = IterReader(link)
+    op.operate( )
+    #while link.received( ) > 0:
+    #  print lib.hexdump(link.read( ))
     link.close( )
 
 
