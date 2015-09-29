@@ -112,7 +112,8 @@ class DrainRXBuffer (GetName):
 class CountPackets (GetName):
   handle = GATT.Radio.Packet.Count
   def on_response (self, data):
-    print "count:", ord(self.resp.received( )[0])
+    # print "count:", ord(self.resp.received( )[0])
+    pass
 
 class WatchPackets (DrainRXBuffer):
   handle = GATT.Radio.Packet.Count
