@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# PYTHON_ARGCOMPLETE_OK
+self=$0
+NAME=${1-help}
+shift
+PROGRAM="diyps-${NAME}"
+COMMAND=$(which $PROGRAM | head -n 1)
+
+function help_message ( ) {
+  cat <<EOF
+  Usage:
+$self <cmd>
+
+Valid commands:
+  mmblelink 
+  mmblelink env
+  mmblelink scan
+  mmblelink help - this message
+EOF
+}
+
+case $NAME in
+env)
+  echo PATH=$PATH
+  env
+  exit
+  ;;
+scan)
+  python -m mmblelink.link $*
+  ;;
+monitor)
+  python -m mmblelink.monitor $*
+  ;;
+help)
+  help_message
+  ;;
+*)
+  test -n "$COMMAND" && exec $COMMAND $*
+  ;;
+esac
+
+

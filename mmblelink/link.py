@@ -153,12 +153,17 @@ class Channel (object):
       RX: {RX}
       TX: {TX}
       """.format(RX=self.RX, TX=self.TX)
+  def set_handles (self, rx=None, tx=None):
+    self.rx_handle = rx
+    self.tx_handle = tx
   def setRX (self, channel):
-    result = self.ble.write_by_uuid(GATT.Radio.Settings.Channels.RX, channel)
+    print "setting rx to ", channel
+    result = self.ble.write_by_handle(self.rx_handle, str(bytearray([channel])))
     self.RX = channel
     return result
   def setTX (self, channel):
-    result = self.ble.write_by_uuid(GATT.Radio.Settings.Channels.TX, channel)
+    print "setting rx to ", channel
+    result = self.ble.write_by_handle(self.tx_handle, str(bytearray([channel])))
     self.TX = channel
     return result
 
@@ -192,6 +197,8 @@ class Link (object):
       except (RuntimeError ), e:
         pass
     self.setup_handles( )
+    handle = dict(rx=self.set_rx_channel_handle, tx=self.set_tx_channel_handle)
+    self.channel.set_handles(**handle)
 
   def fetch_name (self):
     req = GetName(self)
@@ -222,7 +229,10 @@ class Link (object):
         self.get_name_handle = char['value_handle']
       if char['uuid'] == GATT.Radio.Settings.Name:
         self.set_name_handle = char['value_handle']
-
+      if GATT.Radio.Settings.Channels.TX == char['uuid']:
+        self.set_tx_channel_handle = char['value_handle']
+      if GATT.Radio.Settings.Channels.RX == char['uuid']:
+        self.set_rx_channel_handle = char['value_handle']
   def set_name (self, name):
     return self.requestor.write_by_handle(self.set_name_handle, name)
 
@@ -246,8 +256,8 @@ class Link (object):
     return ord(self.requestor.read_by_handle(self.packet_count)[0])
 
   def dump_rx_buffer (self):
-    while link.received( ) > 0:
-      yield link.read( )
+    while self.received( ) > 0:
+      yield self.read( )
       # print lib.hexdump(link.read( ))
   def read( self, c=64 ):
     r = self.requestor.read_by_handle(self.read_handle)
