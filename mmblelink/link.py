@@ -253,6 +253,11 @@ class Link (object):
     return r
 
   def received (self):
+      op = CountPackets(self)
+      op.operate( )
+      count = ord(op.resp.received( )[0])
+      return count
+  def get_packet_count (self):
     return ord(self.requestor.read_by_handle(self.packet_count)[0])
 
   def dump_rx_buffer (self):
