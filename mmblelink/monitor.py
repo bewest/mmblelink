@@ -103,6 +103,7 @@ class Formatter (object):
     # print 
     if self.args.format not in ['json']:
       self.args.out.write(self.formatter(record))
+      self.args.out.flush( )
     else:
       self.data.append(record)
   def finish_json (self):
