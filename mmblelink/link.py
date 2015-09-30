@@ -50,6 +50,7 @@ class GATT:
 
 class FetchName (GATTResponse):
   handle = GATT.Name
+  sleep_interval = 0.150
   data = None
   def __init__ (self, link):
     self.link = link
@@ -61,11 +62,12 @@ class FetchName (GATTResponse):
   def operate (self):
     self.link.requestor.read_by_uuid_async(self.handle, self)
     while not self.received( ):
-      time.sleep(0.150)
+      time.sleep(self.sleep_interval)
 
 
 class GetName (object):
   handle = GATT.Name
+  sleep_interval = 0.150
   def __init__ (self, link):
     self.link = link
     self.resp = GATTResponse( )
@@ -73,7 +75,7 @@ class GetName (object):
   def done (self):
     return self.resp.received( ) or False
   def sleep (self):
-    time.sleep(0.150)
+    time.sleep(self.sleep_interval)
   def step (self):
     self.sleep( )
   def prolog (self):
@@ -173,10 +175,13 @@ class Link (object):
   port = None
   channel = None
   requestor = None
+  sleep_interval = 0.150
   _name = None
-  def __init__ (self, mac, timeout=None):
+  def __init__ (self, mac, timeout=None, sleep_interval=None):
     if timeout is not None:
       self.__timeout__ = timeout
+    if sleep_interval is not None:
+      self.sleep_interval = sleep_interval
     self.mac = mac
 
 
@@ -255,6 +260,7 @@ class Link (object):
 
   def received (self):
       op = CountPackets(self)
+      op.sleep_interval = self.sleep_interval
       op.operate( )
       count = ord(op.resp.received( )[0])
       return count

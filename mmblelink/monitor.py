@@ -13,11 +13,11 @@ class Monitor (object):
      self.link = link
      self.setup(**kwds)
 
-  def setup (self, RX=Channels.Stick.RX, timeout=None, sleep=.150, verbosity=0, **kwds):
+  def setup (self, RX=Channels.Stick.RX, timeout=None, sleep_interval=.150, verbosity=0, **kwds):
      self.RX = RX
      self.timeout = timeout
      self.verbosity = verbosity
-     self.sleep_interval = sleep
+     self.sleep_interval = sleep_interval
      self.link.channel.setRX(self.RX)
   def start (self):
     self.start = time.time( )
@@ -56,6 +56,8 @@ def setup_argparser (parser=None):
   parser.add_argument('--verbosity', '-v', action='count')
   parser.add_argument('--rx', '-r', default='PumpTX', choices=['PumpTX', 'PumpRX'])
   parser.add_argument('--timeout', '-t', type=int, default=0)
+  parser.add_argument('--sleep_interval', '-s', help="Amount to sleep between polling.", type=float, default=.150)
+  parser.add_argument('--buffer', '-b', dest='stream', action='store_false', default=True)
   parser.add_argument('--format', '-f', default='text', choices=Formatter.formats)
   parser.add_argument('mac', help='MAC address of rileylink')
   parser.add_argument('--timezone', '-Z', type=gettz, default=gettz( ))
@@ -70,7 +72,7 @@ class Formatter (object):
   def __init__ (self, args):
     self.args = args
     self.formatter = getattr(self, 'format_' + args.format)
-    if args.format == "json":
+    if not self.args.stream:
       self.data = [ ]
   def format_text (self, record):
     return """{dateString} {head} {rfpacket}
@@ -101,12 +103,12 @@ class Formatter (object):
     rfpacket = buf[2:]
     record = dict(date=stamp, dateString=dt.isoformat( ), rfpacket=str(rfpacket).encode('hex'), head=str(rssi).encode('hex'), serial=str(rfpacket[1:4]).encode('hex'), decocare_hex=msg )
     # print 
-    if self.args.format not in ['json']:
+    if self.args.stream:
       self.args.out.write(self.formatter(record))
       self.args.out.flush( )
     else:
       self.data.append(record)
-  def finish_json (self):
+  def finish_concat (self):
     self.args.out.write(self.formatter(self.data))
 
 
@@ -122,14 +124,15 @@ if __name__ == '__main__':
   if args.verbosity > 0:
     print args
   if args.mac:
-    link = Link(mac)
+    link = Link(mac, sleep_interval=args.sleep_interval)
     link.open( )
-    monitor = Monitor(link, RX=channel, timeout=args.timeout, verbosity=args.verbosity)
+    monitor = Monitor(link, RX=channel, sleep_interval=args.sleep_interval, timeout=args.timeout, verbosity=args.verbosity)
     try:
       monitor.listen(format_record)
     except (KeyboardInterrupt), e:
       if args.verbosity > 0:
         print "Quitting"
-    if args.format in ['json']:
-      format_record.finish_json( )
+    finally:
+      if not args.stream:
+        format_record.finish_concat( )
     link.close( )
