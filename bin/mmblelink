@@ -29,6 +29,24 @@ env)
 scan)
   python -m mmblelink.link $*
   ;;
+duplex)
+  RX=$1
+  shift
+  TX=$1
+  shift
+  FORMAT=${1-text}
+  shift
+  # -s .50 -vv   --format markdown   --rx PumpRX 00:07:80:39:4C:37 --timeout 30 -o openaps-loops-pump-rx.txt
+  export TX RX
+  (
+  echo "PumpTX" $TX
+  echo "PumpRX" $RX
+  (python -m mmblelink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ||
+  python -m mmblelink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ) &
+  ( python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ||
+  python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ) &
+  )
+  ;;
 monitor)
   python -m mmblelink.monitor $*
   ;;

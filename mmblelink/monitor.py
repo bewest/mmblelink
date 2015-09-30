@@ -46,6 +46,9 @@ class Monitor (object):
 
 def choose_rx_channel (value):
   keys = dict(PumpTX=Channels.Pump.TX, PumpRX=Channels.Pump.RX)
+  keys['0'] = 0
+  keys['1'] = 1
+  keys['2'] = 2
   return keys.get(value, Channels.Pump.TX)
 
 def setup_argparser (parser=None):
@@ -54,7 +57,7 @@ def setup_argparser (parser=None):
   from dateutil.tz import gettz
   parser = parser or argparse.ArgumentParser( )
   parser.add_argument('--verbosity', '-v', action='count')
-  parser.add_argument('--rx', '-r', default='PumpTX', choices=['PumpTX', 'PumpRX'])
+  parser.add_argument('--rx', '-r', default='PumpTX', choices=['0', '1', '2', 'PumpTX', 'PumpRX'])
   parser.add_argument('--timeout', '-t', type=int, default=0)
   parser.add_argument('--sleep_interval', '-s', help="Amount to sleep between polling.", type=float, default=.150)
   parser.add_argument('--buffer', '-b', dest='stream', action='store_false', default=True)
