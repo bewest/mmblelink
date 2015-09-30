@@ -80,20 +80,20 @@ class Formatter (object):
 
   def format_hexdump (self, record):
     return """{dateString}
-    {decocare_hex}
+{decocare_hex}
 """.format(**record)
 
   def format_json (self, record):
     return "{}\n".format(json.dumps(record, indent=2, separators=(',', ': ')))
 
   def format_markdown (self, record):
-    return """### {dateString}
+    return """### {dateString} {op} {serial}
 
 ```
-{decocare_hex}
+{payload_hex}
 ```
 
-""".format(**record)
+""".format(payload_hex=lib.hexdump(bytearray(record.get('payload').decode('hex'))), **record)
 
   def __call__ (self, buf):
     stamp = time.time( )
@@ -101,7 +101,14 @@ class Formatter (object):
     msg = lib.hexdump(buf)
     rssi = buf[0:2]
     rfpacket = buf[2:]
-    record = dict(date=stamp, dateString=dt.isoformat( ), rfpacket=str(rfpacket).encode('hex'), head=str(rssi).encode('hex'), serial=str(rfpacket[1:4]).encode('hex'), decocare_hex=msg )
+    record = dict(date=stamp
+           , dateString=dt.isoformat( )
+           , rfpacket=str(rfpacket).encode('hex')
+           , head=str(rssi).encode('hex')
+           , serial=str(rfpacket[1:4]).encode('hex')
+           , op=str(rfpacket[0:1]).encode('hex')
+           , payload=str(rfpacket[4:]).encode('hex')
+           , decocare_hex=msg )
     # print 
     if self.args.stream:
       self.args.out.write(self.formatter(record))
