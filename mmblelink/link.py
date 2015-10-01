@@ -253,9 +253,9 @@ class Link (object):
     self.requestor.disconnect( )
     
   def write( self, string ):
-    r = self.requestor.write_by_handle(self.write_handle, string)
+    r = self.requestor.write_by_handle(self.write_handle, str(string))
     io.info( 'usb.write.len: %s\n%s' % ( len( string ),
-                                         lib.hexdump( bytearray( string ) ) ) )
+                                         lib.hexdump( string ) ) )
     return r
 
   def received (self):
