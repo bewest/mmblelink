@@ -79,7 +79,7 @@ class Packet (_Packet):
     payload  = None
     crc      = None
     valid    = False
-    if serial and len(rfpacket) > 3:
+    if serial and len(rfpacket) > 5:
       rftype   = rfpacket[0]
       command  = rfpacket[4]
       payload  = rfpacket[5:-1]

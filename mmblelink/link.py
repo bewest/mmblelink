@@ -252,6 +252,11 @@ class Link (object):
     io.info( 'disconnecting bluetooth' )
     self.requestor.disconnect( )
     
+  def triggerTX (self):
+    # self.send_handle = char['value_handle']
+    r = self.requestor.write_by_handle(self.send_handle, str(bytearray([0x01])))
+    print "triggered", r
+    return r
   def write( self, string ):
     r = self.requestor.write_by_handle(self.write_handle, str(string))
     io.info( 'usb.write.len: %s\n%s' % ( len( string ),

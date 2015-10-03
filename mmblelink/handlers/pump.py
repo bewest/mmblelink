@@ -14,8 +14,8 @@ class PumpEmulate (object):
     self.serial = serial
     self.setup( )
   def setup (self):
-    self.link.channel.setRX(0)
-    self.link.channel.setTX(2)
+    print "RX", self.link.channel.setRX(0)
+    print "TX", self.link.channel.setTX(2)
   def run (self, timeout=None):
     pass
   def start (self):
@@ -75,11 +75,16 @@ class States (object):
       print "SENDING", str(buf).encode('hex')
       print lib.hexdump(buf)
       link.write(buf)
+      link.triggerTX( )
+      link.triggerTX( )
+      link.triggerTX( )
       
   def onReadPumpModel (self, packet):
     body = bytearray(self.model) + bytearray([0x00]) 
+    # payload = bytearray([len(body) + 5, len(self.model)]) + body
     payload = bytearray([len(body) + 3, len(self.model)]) + body
-    missing = bytearray([0x00]) * (65 - len(payload))
+    missing = [ ]
+    # missing = bytearray([0x00]) * (65 - len(payload))
     return payload + bytearray(missing)
     
 
