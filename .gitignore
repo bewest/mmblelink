@@ -16,3 +16,4 @@ doc/_build/
 dist/
 .idea/
 *.iml
+logs/
