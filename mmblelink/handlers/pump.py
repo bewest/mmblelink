@@ -137,6 +137,8 @@ class States (object):
       # link.write(buf)
       link.write(encoded)
       link.triggerTX( )
+      link.triggerTX( )
+      link.triggerTX( )
       
   def onReadPumpModel (self, packet):
     # body = bytearray(self.model)

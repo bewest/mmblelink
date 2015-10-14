@@ -56,6 +56,12 @@ class Packet (_Packet):
     buf.extend(bytearray([pkt.crc]))
     return buf
 
+  def oneliner (self):
+    kwds = dict(head=str(bytearray([self.op])).encode('hex')
+         , serial=self.serial
+         , tail=str(self.payload + bytearray([self.crc])).encode('hex')
+         )
+    return """{head}{serial}{tail}""".format(**kwds)
   def genCRC (self):
     buf = bytearray([self.type])
     buf.extend(self.serial.decode('hex'))

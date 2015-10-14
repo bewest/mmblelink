@@ -3,8 +3,7 @@
 # TODO: move all constants to config module.
 #
 
-import bluetooth
-from bluetooth.ble import DiscoveryService
+from gattlib import DiscoveryService
 import gattlib
 from gattlib import GATTRequester, GATTResponse
 from exceptions import RuntimeError
