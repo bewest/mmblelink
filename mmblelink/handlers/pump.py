@@ -147,7 +147,7 @@ class States (object):
     # payload = bytearray([0x09, len(self.model)]) + body
     # payload = bytearray([len(self.model)]) + body
     missing = [ ]
-    # missing = bytearray([0x00]) * (65 - len(payload))
+    missing = bytearray([0x00]) * (65 - len(payload))
     return payload + bytearray(missing)
     
 
