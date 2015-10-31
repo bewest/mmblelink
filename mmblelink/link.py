@@ -21,7 +21,11 @@ class AlreadyInUseException (Exception):
 def scanner ( ):
   service = DiscoveryService( )
   devices = service.discover(2)
-  return devices
+  results = dict( )
+  for addr, name in devices.items( ):
+    if addr.startswith("00:07:80"):
+      results[addr] = name
+  return results
 
 class Characteristics (GATTResponse):
   def on_notification(self, handle, data):
