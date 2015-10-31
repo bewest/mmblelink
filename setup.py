@@ -7,4 +7,8 @@ setup(
     packages=find_packages(),
     include_package_data=False,
     install_requires=["python-dateutil", "decocare", "gattlib"],
+    scripts = [
+      'bin/mmblelink'
+    , 'bin/mmblelink-send.py'
+    ]
 )
