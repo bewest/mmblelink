@@ -79,7 +79,9 @@ class Sender (object):
         if self.done( ):
           return self.command
         else:
-          self.ack( )
+          print "not done", len(self.frames)
+          # self.ack( )
+          pass
   def wait_for_ack (self):
     link = self.link
     while not self.done( ):
@@ -90,6 +92,7 @@ class Sender (object):
         if self.responds_to(resp):
           if resp.op == 0x06:
             # self.unframe(resp)
+            print "found valid ACK"
             return resp
   def responds_to (self, resp):
     return resp.valid and resp.serial == self.command.serial
@@ -121,6 +124,7 @@ class Sender (object):
     if should_send:
       print "has params to send"
       self.wait_for_ack( )
+      print "have ack"
       self.send_params( )
       # self.wait_for_ack( )
   def __call__ (self, command):
