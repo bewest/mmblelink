@@ -1,6 +1,6 @@
 
 """
-mmblelink - openaps driver for mmblelink
+meowlink - openaps driver for meowlink
 This emulates the stick from decocare, using the RileyLink.
 """
 from openaps.uses.use import Use

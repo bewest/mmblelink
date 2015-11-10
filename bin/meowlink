@@ -13,10 +13,10 @@ function help_message ( ) {
 $self <cmd>
 
 Valid commands:
-  mmblelink 
-  mmblelink env
-  mmblelink scan
-  mmblelink help - this message
+  meowlink 
+  meowlink env
+  meowlink scan
+  meowlink help - this message
 EOF
 }
 
@@ -27,7 +27,7 @@ env)
   exit
   ;;
 scan)
-  python -m mmblelink.link $*
+  python -m meowlink.link $*
   ;;
 duplex)
   RX=$1
@@ -41,17 +41,17 @@ duplex)
   (
   echo "PumpTX" $TX
   echo "PumpRX" $RX
-  (python -m mmblelink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ||
-  python -m mmblelink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ) &
-  ( python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ||
-  python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ) &
+  (python -m meowlink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ||
+  python -m meowlink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ) &
+  ( python -m meowlink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ||
+  python -m meowlink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ) &
   )
   ;;
 emulate)
-  python -m mmblelink.handlers.pump $*
+  python -m meowlink.handlers.pump $*
   ;;
 monitor)
-  python -m mmblelink.monitor $*
+  python -m meowlink.monitor $*
   ;;
 help)
   help_message

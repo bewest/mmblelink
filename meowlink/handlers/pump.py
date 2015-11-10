@@ -4,11 +4,11 @@ from decocare import lib
 import collections
 import types
 import time
-from mmblelink.packets.rf import Packet
-from mmblelink.fourbysix import FourBySix
+from meowlink.packets.rf import Packet
+from meowlink.fourbysix import FourBySix
 
 class PumpEmulate (object):
-  def __init__ (self, monitor, serial='909090', name="mmblelink"):
+  def __init__ (self, monitor, serial='909090', name="rflink"):
     self.monitor = monitor
     self.link = monitor.link
     self.name = name
@@ -44,7 +44,7 @@ class States (object):
   def __init__ (self, serial=None, model=None):
     self.serial = serial
     self.model = model
-    self.queue = collections.deque( ) 
+    self.queue = collections.deque( )
     self.responders = dict( )
     self._setup_commands( )
   def _setup_commands (self):
@@ -83,17 +83,17 @@ class States (object):
       link.triggerTX( )
       link.triggerTX( )
       link.triggerTX( )
-      
+
   def onReadPumpModel (self, packet):
     # body = bytearray(self.model)
-    body = bytearray(self.model) + bytearray([0x00, 0x00, 0x00 ]) 
+    body = bytearray(self.model) + bytearray([0x00, 0x00, 0x00 ])
     payload = bytearray([len(body) + 3, len(self.model)]) + body
     # payload = bytearray([0x09, len(self.model)]) + body
     # payload = bytearray([len(self.model)]) + body
     missing = [ ]
     missing = bytearray([0x00]) * (65 - len(payload))
     return payload + bytearray(missing)
-    
+
 
 class Responder (object):
   def __init__ (self, com, state):
@@ -125,7 +125,7 @@ def setup_argparser (parser=None):
   # parser.add_argument('--buffer', '-b', dest='stream', action='store_false', default=True)
   # parser.add_argument('--format', '-f', default='text', choices=Formatter.formats)
   parser.add_argument('--strict', '-S', action='store_false', default=True)
-  parser.add_argument('--model', '-M', default='mmblelink', help="Name to send")
+  parser.add_argument('--model', '-M', default='meowlink', help="Name to send")
   parser.add_argument('mac', help='MAC address of rileylink')
   parser.add_argument('serial', help='Serial of fake pump to emulate.')
   parser.add_argument('--timezone', '-Z', type=gettz, default=gettz( ))
@@ -135,13 +135,13 @@ def setup_argparser (parser=None):
   return parser
 
 if __name__ == '__main__':
-  from mmblelink.monitor import Monitor, choose_rx_channel as choose_channel
-  from mmblelink.link import Link
+  from meowlink.monitor import Monitor, choose_rx_channel as choose_channel
+  from meowlink.link import Link
   parser = setup_argparser( )
   args = parser.parse_args( )
   print "radio"
   print lib.hexdump(FourBySix.encode(bytearray(str('a79090908d090336363680').decode('hex'))))
-  
+
   if args.verbosity > 0:
     print args
   if args.mac and args.serial:

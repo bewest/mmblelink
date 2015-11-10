@@ -1,13 +1,13 @@
 
 
 from decocare.helpers import messages
-from mmblelink.link import Link
-from mmblelink.handlers.stick import Pump
-from mmblelink.monitor import choose_rx_channel as choose_channel
+from meowlink.link import Link
+from meowlink.handlers.stick import Pump
+from meowlink.monitor import choose_rx_channel as choose_channel
 
 class SendMsgApp (messages.SendMsgApp):
   """
-  mmblelink adapter to decocare's SendMsgApp
+  meowlink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
     parser.add_argument('--rx', '-R', default='PumpTX', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])

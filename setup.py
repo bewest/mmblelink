@@ -2,13 +2,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='mmblelink',
+    name='meowlink',
     version="1.0",
     packages=find_packages(),
     include_package_data=True,
     install_requires=["python-dateutil", "decocare", "gattlib"],
     scripts = [
-      'bin/mmblelink'
-    , 'bin/mmblelink-send.py'
+      'bin/meowlink'
+    , 'bin/meowlink-send.py'
     ]
 )
