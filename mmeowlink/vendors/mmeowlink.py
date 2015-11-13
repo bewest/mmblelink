@@ -1,6 +1,6 @@
 
 """
-meowlink - openaps driver for meowlink
+mmeowlink - openaps driver for meowlink
 This emulates the stick from decocare, Based on the mmblelink code,
 which talks to the Rileylink.
 """
@@ -30,13 +30,13 @@ def configure_add_app (app, parser):
 def configure_app (app, parser):
   if app.parent.name == 'add':
     """
-    print "MEOWLINK CONFIG INNER", app, app.parent.name, app.name
+    print "MMEOWLINK CONFIG INNER", app, app.parent.name, app.name
     """
 def configure_parser (parser):
   pass
 def main (args, app):
   """
-  print "MEOWLINK", args, app
+  print "MMEOWLINK", args, app
   print "app commands", app.selected.name
   """
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from meowlink.cli import messages
+from mmeowlink.cli import messages
 
 if __name__ == '__main__':
   app = messages.SendMsgApp( )

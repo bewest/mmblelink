@@ -4,7 +4,7 @@ Please note that this is not yet in a working state! I'm running this project
 with the [Release Early, Release Often](https://en.wikipedia.org/wiki/Release_early,_release_often)
 methodology.
 
-# Meowlink
+# MMeowlink
 
 Use OpenAPS with a USB controller other than the Minimed-Supplied CareLink
 adapter. These controllers have longer range than the CareLink.
@@ -37,6 +37,6 @@ it works.
 
 # LICENSE
 
-Meowlink Copyright (C) 2015 Oskar Pearson and Ben West.
+MMeowlink Copyright (C) 2015 Oskar Pearson and Ben West.
 This program comes with ABSOLUTELY NO WARRANTY. See the LICENSE file
 for more details.

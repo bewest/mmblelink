@@ -1,12 +1,12 @@
 
 
 from decocare.helpers import messages
-from meowlink.rfcat_link import Link
-from meowlink.handlers.stick import Pump
+from mmeowlink.rfcat_link import Link
+from mmeowlink.handlers.stick import Pump
 
 class SendMsgApp (messages.SendMsgApp):
   """
-  meowlink adapter to decocare's SendMsgApp
+  mmeowlink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
     parser = super(SendMsgApp, self).customize_parser(parser)

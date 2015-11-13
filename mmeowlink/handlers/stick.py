@@ -1,7 +1,7 @@
 
 from decocare import session, lib, commands
-from meowlink.packets.rf import Packet
-from meowlink.fourbysix import FourBySix
+from mmeowlink.packets.rf import Packet
+from mmeowlink.fourbysix import FourBySix
 import logging
 import time
 from decocare import lib
