@@ -1,30 +1,21 @@
 
 
 from decocare.helpers import messages
-from meowlink.link import Link
+from meowlink.rfcat_link import Link
 from meowlink.handlers.stick import Pump
-from meowlink.monitor import choose_rx_channel as choose_channel
 
 class SendMsgApp (messages.SendMsgApp):
   """
   meowlink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
-    parser.add_argument('--rx', '-R', default='PumpTX', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
-    parser.add_argument('--tx', '-T', default='PumpRX', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
-    parser.add_argument('MAC', help="RileyLink address")
-    parser.add_argument('--sleep_interval', '-s', help="Amount to sleep between polling.", type=float, default=.150)
     parser = super(SendMsgApp, self).customize_parser(parser)
     return parser
   def prelude (self, args):
-    mac = args.MAC
-    self.link = link = Link(mac, sleep_interval=args.sleep_interval)
+    self.link = link = Link()
     link.open( )
     # get link
     # drain rx buffer
-    self.link.dump_rx_buffer( )
-    self.link.channel.setTX(args.tx)
-    self.link.channel.setRX(args.rx)
     self.pump = Pump(self.link, args.serial)
     print args
     print args.command
@@ -40,4 +31,3 @@ class SendMsgApp (messages.SendMsgApp):
   def postlude (self, args):
     # self.link.close( )
     return
-

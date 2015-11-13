@@ -1,3 +1,9 @@
+# NB
+
+Please note that this is not yet in a working state! I'm running this project
+with the [Release Early, Release Often](https://en.wikipedia.org/wiki/Release_early,_release_often)
+methodology.
+
 # Meowlink
 
 Use OpenAPS with a USB controller other than the Minimed-Supplied CareLink
@@ -18,7 +24,10 @@ Note that to install the RfCat firmware onto the device, you will either need
 the [TI Debugger](http://www.ti.com/tool/cc-debugger), a
 [http://goodfet.sourceforge.net](GoodFET), or a similar JTAG adapter.
 
-# Not Available in the USA
+This code has been tested with the RfCatDons-150225.hex file from
+rfcat_150225.tgz on the [RfCat Download page](https://bitbucket.org/atlas0fd00m/rfcat/downloads)
+
+# Not Currently Available in the USA
 
 Currently this only works with non-USA pumps. Getting it to work with
 other devices should be as simple as changing the Radio Frequencies to
@@ -28,6 +37,6 @@ it works.
 
 # LICENSE
 
-Meowlink Copyright (C) 2015 Oskar Pearson
+Meowlink Copyright (C) 2015 Oskar Pearson and Ben West.
 This program comes with ABSOLUTELY NO WARRANTY. See the LICENSE file
 for more details.

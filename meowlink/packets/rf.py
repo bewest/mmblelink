@@ -111,5 +111,3 @@ class Packet (_Packet):
            )
     pkt = klass(**record)
     return pkt
-
-

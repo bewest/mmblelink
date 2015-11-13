@@ -7,7 +7,7 @@ import time
 from decocare import lib
 io  = logging.getLogger( )
 log = io.getChild(__name__)
-
+#
 class Sender (object):
   sent_params = False
   expected = 64
@@ -17,97 +17,98 @@ class Sender (object):
 
   def send (self, payload):
     self.link.write(payload)
-    self.link.triggerTX( )
-    self.link.write(payload)
-    self.link.triggerTX( )
-  def send_params (self):
+
+  # def send_params (self):
+  #   command = self.command
+  #   params = self.command.params
+  #   payload = bytearray([len(params)]) + bytearray(params)
+  #   missing = [ ]
+  #   missing = bytearray([0x00]) * (64 - len(params))
+  #   payload = payload + missing
+  #   pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
+  #   pkt = pkt.update(payload)
+  #   buf = pkt.assemble( )
+  #   print "sending PARAMS", str(buf).encode('hex')
+  #   encoded =  FourBySix.encode(buf)
+  #   self.link.write(encoded)
+  #   self.sent_params = True
+#
+#   def ack (self):
+#     null = bytearray([0x00])
+#     pkt = Packet.fromCommand(self.command, payload=null, serial=self.command.serial)
+#     pkt = pkt._replace(payload=null, op=0x06)
+#     buf = pkt.assemble( )
+#     print "ACK tx", str(buf).encode('hex')
+#     encoded =  FourBySix.encode(buf)
+#     self.link.write(encoded)
+#     self.link.triggerTX( )
+#
+#   def unframe (self, resp):
+#     payload = resp.payload
+#     if self.expected > 64:
+#       num, payload = payload[0], payload[1:]
+#       self.frames.append((num, payload))
+#       self.ack( )
+#     print "len", len(payload)
+#     self.command.respond(payload)
+#
+#   def done (self):
+#     needs_params = self.command.params and len(self.command.params) > 0 or False
+#     if needs_params and not self.sent_params:
+#       return False
+#     return  self.command.done( )
+#
+#   def respond (self, resp):
+#     if resp.valid and resp.serial == self.command.serial:
+#       if resp.op == 0x06:
+#         # if not self.command.done( ) or (self.command.params and not self.sent_params):
+#         print "done?", self.command, self.done( )
+#         if not self.done( ):
+#           print "got ack but not done"
+#           return self.command
+#         else:
+#           return self.command
+#       if resp.op == self.command.code:
+#         # self.command.respond(resp.payload)
+#         self.unframe(resp)
+#         # print "len", len(resp.payload)
+#         if self.done( ):
+#           return self.command
+#         else:
+#           print "not done", len(self.frames)
+#           # self.ack( )
+#           pass
+#
+#   def wait_for_ack (self):
+#     link = self.link
+#     while not self.done( ):
+#       for buf in link.dump_rx_buffer( ):
+#         print "wait_for_ack"
+#         print lib.hexdump(buf)
+#         resp = Packet.fromBuffer(buf)
+#         if self.responds_to(resp):
+#           if resp.op == 0x06:
+#             # self.unframe(resp)
+#             print "found valid ACK"
+#             return resp
+#
+#   def responds_to (self, resp):
+#     return resp.valid and resp.serial == self.command.serial
+#
+#   def wait_response (self):
+#     link = self.link
+#     for buf in link.dump_rx_buffer( ):
+#       resp = Packet.fromBuffer(buf)
+#       if self.responds_to(resp):
+#         print "READ"
+#         print lib.hexdump(buf)
+#         return resp
+#
+  def prelude (self):
+    link = self.link
     command = self.command
-    params = self.command.params
-    payload = bytearray([len(params)]) + bytearray(params)
-    missing = [ ]
-    missing = bytearray([0x00]) * (64 - len(params))
-    payload = payload + missing
-    pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
-    pkt = pkt.update(payload)
-    buf = pkt.assemble( )
-    print "sending PARAMS", str(buf).encode('hex')
-    encoded =  FourBySix.encode(buf)
-    self.link.write(encoded)
-    self.link.triggerTX( )
-    self.link.write(encoded)
-    self.link.triggerTX( )
-    self.sent_params = True
-  def ack (self):
-    null = bytearray([0x00])
-    pkt = Packet.fromCommand(self.command, payload=null, serial=self.command.serial)
-    pkt = pkt._replace(payload=null, op=0x06)
-    buf = pkt.assemble( )
-    print "ACK tx", str(buf).encode('hex')
-    encoded =  FourBySix.encode(buf)
-    self.link.write(encoded)
-    self.link.triggerTX( )
-    self.link.write(encoded)
-    self.link.triggerTX( )
-    
-  def unframe (self, resp):
-    payload = resp.payload
-    if self.expected > 64:
-      num, payload = payload[0], payload[1:]
-      self.frames.append((num, payload))
-      self.ack( )
-    print "len", len(payload)
-    self.command.respond(payload)
-  def done (self):
-    needs_params = self.command.params and len(self.command.params) > 0 or False
-    if needs_params and not self.sent_params:
-      return False
-    return  self.command.done( )
-  def respond (self, resp):
-    if resp.valid and resp.serial == self.command.serial:
-      if resp.op == 0x06:
-        # if not self.command.done( ) or (self.command.params and not self.sent_params):
-        print "done?", self.command, self.done( )
-        if not self.done( ):
-          print "got ack but not done"
-          return self.command
-        else:
-          return self.command
-      if resp.op == self.command.code:
-        # self.command.respond(resp.payload)
-        self.unframe(resp)
-        # print "len", len(resp.payload)
-        if self.done( ):
-          return self.command
-        else:
-          print "not done", len(self.frames)
-          # self.ack( )
-          pass
-  def wait_for_ack (self):
-    link = self.link
-    while not self.done( ):
-      for buf in link.dump_rx_buffer( ):
-        print "wait_for_ack"
-        print lib.hexdump(buf)
-        resp = Packet.fromBuffer(buf)
-        if self.responds_to(resp):
-          if resp.op == 0x06:
-            # self.unframe(resp)
-            print "found valid ACK"
-            return resp
-  def responds_to (self, resp):
-    return resp.valid and resp.serial == self.command.serial
-  def wait_response (self):
-    link = self.link
-    for buf in link.dump_rx_buffer( ):
-      resp = Packet.fromBuffer(buf)
-      if self.responds_to(resp):
-        print "READ"
-        print lib.hexdump(buf)
-        return resp
-  def prelude (self, command):
-    link = self.link
+
     self.expected = command.bytesPerRecord * command.maxRecords
-    self.command = command
     # payload = bytearray([len(command.params)]) + bytearray(command.params)
     payload = bytearray([0])
     self.pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
@@ -116,7 +117,7 @@ class Sender (object):
     print "sending", str(buf).encode('hex')
     encoded =  FourBySix.encode(buf)
     self.send(encoded)
-    print "searching response for ", command, 'done? ', self.done( )
+    # print "searching response for ", command, 'done? ', self.done( )
 
   def upload (self):
     params = self.command.params
@@ -127,54 +128,54 @@ class Sender (object):
       print "have ack"
       self.send_params( )
       # self.wait_for_ack( )
-  def __call__ (self, command):
-    link = self.link
-    # empty buffer
-    link.dump_rx_buffer( )
-    self.prelude(command)
-    self.upload( )
-    while not self.done( ):
-      for buf in link.dump_rx_buffer( ):
-        print lib.hexdump(buf)
-        resp = Packet.fromBuffer(buf)
-        print "pkt resp", resp
-        if resp.valid and resp.serial == self.command.serial:
-          self.respond(resp)
-    print 'frames',  len(self.frames)
-    return command
 
-class Repeater (Sender):
-  timeout = 24
-  def send (self, payload):
-    while self.link.received( ) < 1 and not self.timedout( ):
-      self.link.write(payload)
-      self.link.triggerTX( )
-      self.link.write(payload)
-      self.link.triggerTX( )
-      self.link.sleep( )
-  def timedout (self):
-    now = time.time( )
-    return now - self.start > self.timeout
   def __call__ (self, command):
-    self.start = time.time( )
-    link = self.link
-    # empty buffer
-    link.dump_rx_buffer( )
-    self.prelude(command)
-    while not self.done( ) and not self.timedout( ):
-      for buf in link.dump_rx_buffer( ):
-        # print lib.hexdump(buf)
-        resp = Packet.fromBuffer(buf)
-        # print "pkt resp", resp
-        if resp.valid and resp.serial == self.command.serial:
-          self.upload( )
-          self.wait_for_ack( )
-          # self.respond(resp)
-          return command
-        else:
-          self.prelude(command)
-    print 'frames',  len(self.frames)
+    self.command = command
+
+    self.prelude()
+    self.upload()
+    # while not self.done( ):
+    #   for buf in link.dump_rx_buffer( ):
+    #     print lib.hexdump(buf)
+    #     resp = Packet.fromBuffer(buf)
+    #     print "pkt resp", resp
+    #     if resp.valid and resp.serial == self.command.serial:
+    #       self.respond(resp)
+    # print 'frames',  len(self.frames)
     return command
+#
+# class Repeater (Sender):
+#   timeout = 24
+#   def send (self, payload):
+#     while self.link.received( ) < 1 and not self.timedout( ):
+#       self.link.write(payload)
+#       self.link.triggerTX( )
+#       self.link.write(payload)
+#       self.link.triggerTX( )
+#       self.link.sleep( )
+#   def timedout (self):
+#     now = time.time( )
+#     return now - self.start > self.timeout
+#   def __call__ (self, command):
+#     self.start = time.time( )
+#     link = self.link
+#     # empty buffer
+#     link.dump_rx_buffer( )
+#     self.prelude(command)
+#     while not self.done( ) and not self.timedout( ):
+#       for buf in link.dump_rx_buffer( ):
+#         # print lib.hexdump(buf)
+#         resp = Packet.fromBuffer(buf)
+#         # print "pkt resp", resp
+#         if resp.valid and resp.serial == self.command.serial:
+#           self.upload( )
+#           self.wait_for_ack( )
+#           # self.respond(resp)
+#           return command
+#         else:
+#           self.prelude(command)
+#     print 'frames',  len(self.frames)
+#     return command
 
 
 class Pump (session.Pump):
@@ -195,8 +196,6 @@ class Pump (session.Pump):
 
   def execute (self, command):
     command.serial = self.serial
-    transfer = Sender(self.link)
-    response = transfer(command)
-    return response
-
-
+    
+    sender = Sender(self.link)
+    return sender(command)
