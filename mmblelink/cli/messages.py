@@ -10,8 +10,8 @@ class SendMsgApp (messages.SendMsgApp):
   mmblelink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
-    parser.add_argument('--rx', '-R', default='PumpTX', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
-    parser.add_argument('--tx', '-T', default='PumpRX', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
+    parser.add_argument('--rx', '-R', default='0', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
+    parser.add_argument('--tx', '-T', default='2', type=choose_channel, choices=[0, 1, 2, '0', '1', '2', 'PumpTX', 'PumpRX'])
     parser.add_argument('MAC', help="RileyLink address")
     parser.add_argument('--sleep_interval', '-s', help="Amount to sleep between polling.", type=float, default=.150)
     parser = super(SendMsgApp, self).customize_parser(parser)

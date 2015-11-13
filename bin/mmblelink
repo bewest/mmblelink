@@ -17,6 +17,8 @@ Valid commands:
   mmblelink env
   mmblelink scan
   mmblelink help - this message
+  mmblelink emulate 
+  mmblelink monitor
 EOF
 }
 
