@@ -17,6 +17,8 @@ Valid commands:
   mmblelink env
   mmblelink scan
   mmblelink help - this message
+  mmblelink emulate 
+  mmblelink monitor
 EOF
 }
 
@@ -46,6 +48,9 @@ duplex)
   ( python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ||
   python -m mmblelink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ) &
   )
+  ;;
+emulate)
+  python -m mmblelink.handlers.pump $*
   ;;
 monitor)
   python -m mmblelink.monitor $*

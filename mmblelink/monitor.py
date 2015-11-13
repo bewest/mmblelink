@@ -5,8 +5,10 @@ import time
 import logging
 from decocare import lib
 from datetime import datetime
+import json
 io  = logging.getLogger( )
 log = io.getChild(__name__)
+from packets.rf import Packet
 
 class Monitor (object):
   def __init__ (self, link,  **kwds):
@@ -18,7 +20,7 @@ class Monitor (object):
      self.timeout = timeout
      self.verbosity = verbosity
      self.sleep_interval = sleep_interval
-     self.link.channel.setRX(self.RX)
+     print self.link.channel.setRX(self.RX)
   def start (self):
     self.start = time.time( )
   def done (self):
@@ -43,6 +45,26 @@ class Monitor (object):
         for buf in link.dump_rx_buffer( ):
           formatter(buf)
           # print lib.hexdump(buf)
+  def generate (self, strict=False, **kwds):
+    self.start( )
+    link = self.link
+    while not self.done( ):
+      count = link.received( )
+      if count < 1:
+        # print "sleeping"
+        log.info('sleeping {}'.format(.150))
+        self.sleep( )
+      else:
+        if self.verbosity > 0:
+          print datetime.now( ).isoformat( ), "count:", count
+        for buf in link.dump_rx_buffer( ):
+          pkt = Packet.fromBuffer(buf)
+          if strict:
+            if pkt.valid:
+              yield pkt
+          else:
+            yield pkt
+          # print lib.hexdump(buf)
 
 def choose_rx_channel (value):
   keys = dict(PumpTX=Channels.Pump.TX, PumpRX=Channels.Pump.RX)
@@ -61,6 +83,7 @@ def setup_argparser (parser=None):
   parser.add_argument('--timeout', '-t', type=int, default=0)
   parser.add_argument('--sleep_interval', '-s', help="Amount to sleep between polling.", type=float, default=.150)
   parser.add_argument('--buffer', '-b', dest='stream', action='store_false', default=True)
+  parser.add_argument('--strict', '-S', action='store_false', default=True)
   parser.add_argument('--format', '-f', default='text', choices=Formatter.formats)
   parser.add_argument('mac', help='MAC address of rileylink')
   parser.add_argument('--timezone', '-Z', type=gettz, default=gettz( ))
@@ -69,7 +92,6 @@ def setup_argparser (parser=None):
   argcomplete.autocomplete(parser)
   return parser
 
-import json
 class Formatter (object):
   formats = ['text', 'hexdump', 'json', 'markdown' ]
   def __init__ (self, args):
@@ -99,6 +121,9 @@ class Formatter (object):
 """.format(payload_hex=lib.hexdump(bytearray(record.get('payload').decode('hex'))), **record)
 
   def __call__ (self, buf):
+    print lib.hexdump(buf)
+    pkt = Packet.fromBuffer(buf)
+    """
     stamp = time.time( )
     dt = datetime.fromtimestamp(stamp).replace(tzinfo=self.args.timezone)
     msg = lib.hexdump(buf)
@@ -113,6 +138,10 @@ class Formatter (object):
            , payload=str(rfpacket[4:]).encode('hex')
            , decocare_hex=msg )
     # print 
+    """
+    if pkt.valid:
+      print pkt
+    return pkt
     if self.args.stream:
       self.args.out.write(self.formatter(record))
       self.args.out.flush( )
