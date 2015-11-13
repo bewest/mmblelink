@@ -21,7 +21,11 @@ class AlreadyInUseException (Exception):
 def scanner ( ):
   service = DiscoveryService( )
   devices = service.discover(2)
-  return devices
+  results = dict( )
+  for addr, name in devices.items( ):
+    if addr.startswith("00:07:80"):
+      results[addr] = name
+  return results
 
 class Characteristics (GATTResponse):
   def on_notification(self, handle, data):
@@ -164,7 +168,7 @@ class Channel (object):
     self.RX = channel
     return result
   def setTX (self, channel):
-    print "setting rx to ", channel
+    print "setting tx to ", channel
     result = self.ble.write_by_handle(self.tx_handle, str(bytearray([channel])))
     self.TX = channel
     return result
@@ -218,6 +222,9 @@ class Link (object):
 
   def setName (self, name):
     self._name = name
+
+  def sleep (self):
+    time.sleep(self.sleep_interval)
 
   def setup_handles (self):
     self.characteristics = self.get_characteristics( )
@@ -281,18 +288,6 @@ class Link (object):
     io.info( 'usb.read.raw:\n%s' % ( lib.hexdump( bytearray( r[0] ) ) ) )
     return bytearray(r[0])
     
-  def readline( self ):
-    r = self.serial.readline( )
-    io.info( 'usb.read.len: %s\n%s' % ( len( r ),
-                                        lib.hexdump( bytearray( r ) ) ) )
-    return r
-      
-  def readlines( self ):
-    r = self.serial.readlines( )
-    io.info( 'usb.read.len: %s\n%s' % ( len( r ),
-                                        lib.hexdump( bytearray( ''.join( r ) ) ) ) )
-    return r
-
 # radio d39f1890-17eb-11e4-8c21-0800200c9a66
 # rx-packet-count 41825a20-7402-11e4-8c21-0800200c9a66
 if __name__ == '__main__':
