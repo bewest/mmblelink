@@ -31,6 +31,7 @@ class Link( object ):
       print("Loading rfcat")
       self.rfcat = RfCat()
       self.rfcat.setup_medtronic_mmcommander_eu()
+      self.rfcat.setMaxPower()
 
     log.info( '{agent} started RfCat library'
       .format(agent=self.__class__.__name__ ))
@@ -41,7 +42,7 @@ class Link( object ):
     return True
 
   def write( self, string ):
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
     self.rfcat.RFxmit(string)
     io.info( 'usb.write.len: %s\n%s' % ( len( string ),
@@ -49,9 +50,12 @@ class Link( object ):
     return len(string)
 
   def read( self, c ):
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
 
-    r = self.rfcat.RFrecv(timeout=__timeout__)
+    r = self.rfcat.RFrecv(timeout=self.__timeout__)
+
+    # Workaround for https://bitbucket.org/atlas0fd00m/rfcat/issues/8/first-packet-receive-ok-but-cannot-receive - FIXME
+    self.rfcat.makePktFLEN(255)
     io.info( 'usb.read.len: %s'   % ( len( r ) ) )
     io.info( 'usb.read.raw:\n%s' % ( lib.hexdump( bytearray( r ) ) ) )
     return r
