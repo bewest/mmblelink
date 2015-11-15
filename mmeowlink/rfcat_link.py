@@ -7,6 +7,7 @@ import decocare.fuser as fuser
 import time
 io  = logging.getLogger( )
 log = io.getChild(__name__)
+from fourbysix import FourBySix
 
 from rflib import *
 
@@ -71,7 +72,8 @@ def setup_medtronic_mmcommander (self, locale='US'):
     self.setRadioConfig()
 
 class Link( object ):
-  __timeout__ = .500
+  # __timeout__ = .500
+  __timeout__ = 2
   port = None
   rfcat = None
 
@@ -111,11 +113,14 @@ class Link( object ):
   def read( self ):
     # import pdb; pdb.set_trace()
 
-    r = self.rfcat.RFrecv(timeout=self.__timeout__ * 1000)
+    # r = self.rfcat.RFrecv(timeout=self.__timeout__ * 1000)
+    r = self.rfcat.RFrecv(timeout=5000)
     self.reset_rfcat()
     io.info( 'usb.read.len: %s'   % ( len( r ) ) )
     # import pdb; pdb.set_trace()
 
+    io.info('read encoded %r' % r)
+    io.info('read decoded %s' % FourBySix.decode(bytearray(r[0])))
     # io.info( 'usb.read.raw:\n%s' % ( lib.hexdump( bytearray( r[0] ) ) ) )
     return r[0]
 
