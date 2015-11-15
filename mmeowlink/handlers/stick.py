@@ -52,12 +52,12 @@ class Sender (object):
 #     print "len", len(payload)
 #     self.command.respond(payload)
 #
-#   def done (self):
-#     needs_params = self.command.params and len(self.command.params) > 0 or False
-#     if needs_params and not self.sent_params:
-#       return False
-#     return  self.command.done( )
-#
+  def done (self):
+    needs_params = self.command.params and len(self.command.params) > 0 or False
+    if needs_params and not self.sent_params:
+      return False
+    return self.command.done( )
+
 #   def respond (self, resp):
 #     if resp.valid and resp.serial == self.command.serial:
 #       if resp.op == 0x06:
@@ -79,18 +79,18 @@ class Sender (object):
 #           # self.ack( )
 #           pass
 #
-#   def wait_for_ack (self):
-#     link = self.link
-#     while not self.done( ):
-#       for buf in link.dump_rx_buffer( ):
-#         print "wait_for_ack"
-#         print lib.hexdump(buf)
-#         resp = Packet.fromBuffer(buf)
-#         if self.responds_to(resp):
-#           if resp.op == 0x06:
-#             # self.unframe(resp)
-#             print "found valid ACK"
-#             return resp
+  def wait_for_ack (self):
+    link = self.link
+    while not self.done( ):
+      for buf in link.read( ):
+        print "wait_for_ack"
+        print lib.hexdump(buf)
+        resp = Packet.fromBuffer(buf)
+        if self.responds_to(resp):
+          if resp.op == 0x06:
+            # self.unframe(resp)
+            print "found valid ACK"
+            return resp
 #
 #   def responds_to (self, resp):
 #     return resp.valid and resp.serial == self.command.serial
@@ -117,20 +117,24 @@ class Sender (object):
     print "sending", str(buf).encode('hex')
     encoded =  FourBySix.encode(buf)
     self.send(encoded)
-    # print "searching response for ", command, 'done? ', self.done( )
+    while not self.done():
+      print "searching response for ", command, 'done? ', self.done( )
+      self.wait_for_ack( )
 
   def upload (self):
     params = self.command.params
+
     should_send = len(params) > 0
     if should_send:
       print "has params to send"
       self.wait_for_ack( )
       print "have ack"
       self.send_params( )
-      # self.wait_for_ack( )
+      self.wait_for_ack( )
 
   def __call__ (self, command):
     self.command = command
+    # import pdb; pdb.set_trace()
 
     self.prelude()
     self.upload()
@@ -196,6 +200,6 @@ class Pump (session.Pump):
 
   def execute (self, command):
     command.serial = self.serial
-    
+
     sender = Sender(self.link)
     return sender(command)
