@@ -54,5 +54,32 @@ class FourBySix (object):
       out.append(int(byte_bits, 2))
     return bytearray(out)
 
+  @classmethod
   def decode (klass, buf):
-    pass
+    errors = [ ]
+    symbols = [ ]
+    data = bytearray( )
+    bits = [ ]
+    for byte in buf:
+      bits.append("{:08b}".format(byte))
+    # bits is now a long string of 1s and 0s '10010100101...000000'
+    bits = ''.join(bits)
+    while bits:
+      # iterate 6 bits at a time
+      word, bits = bits[:6], bits[6:]
+      if word == '000000':
+        break
+      symbol = klass.SYMBOLS.get(word, None)
+      if symbol is None:
+        errors.append(dict(remaining=bits, word=word))
+      else:
+        symbols.append(symbol)
+
+    if len(symbols) > 12:
+      if len(symbols) % 2 != 0:
+        symbols = symbols[0:-1]
+      decoded_hex = ''.join(symbols)
+      data = bytearray(str(decoded_hex).decode('hex'))
+    return data
+
+
