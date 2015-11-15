@@ -54,6 +54,7 @@ class FourBySix (object):
       out.append(int(byte_bits, 2))
     return bytearray(out)
 
+  @classmethod
   def decode (klass, buf):
     errors = [ ]
     symbols = [ ]
