@@ -75,9 +75,6 @@ class FourBySix (object):
       else:
         symbols.append(symbol)
 
-    if len(symbols) > 12:
-      if len(symbols) % 2 != 0:
-        symbols = symbols[0:-1]
-      decoded_hex = ''.join(symbols)
-      data = bytearray(str(decoded_hex).decode('hex'))
+    decoded_hex = ''.join(symbols)
+    data = bytearray(str(decoded_hex).decode('hex'))
     return data
