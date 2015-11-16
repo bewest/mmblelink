@@ -7,7 +7,7 @@ import time
 from decocare import lib
 io  = logging.getLogger( )
 log = io.getChild(__name__)
-#
+
 class Sender (object):
   sent_params = False
   expected = 64
@@ -81,20 +81,20 @@ class Sender (object):
 #
   def wait_for_ack (self):
     link = self.link
+
     while not self.done( ):
-      for buf in link.read( ):
-        print "wait_for_ack"
-        print lib.hexdump(buf)
-        resp = Packet.fromBuffer(buf)
-        if self.responds_to(resp):
-          if resp.op == 0x06:
-            # self.unframe(resp)
-            print "found valid ACK"
-            return resp
-#
-#   def responds_to (self, resp):
-#     return resp.valid and resp.serial == self.command.serial
-#
+      buf = link.read( )
+      print lib.hexdump(buf)
+      resp = Packet.fromBuffer(buf)
+      if self.responds_to(resp):
+        if resp.op == 0x06:
+          # self.unframe(resp)
+          print "found valid ACK"
+          return resp
+
+  def responds_to (self, resp):
+    return resp.valid and resp.serial == self.command.serial
+
 #   def wait_response (self):
 #     link = self.link
 #     for buf in link.dump_rx_buffer( ):
@@ -134,7 +134,6 @@ class Sender (object):
 
   def __call__ (self, command):
     self.command = command
-    # import pdb; pdb.set_trace()
 
     self.prelude()
     self.upload()
@@ -148,39 +147,20 @@ class Sender (object):
     # print 'frames',  len(self.frames)
     return command
 #
-# class Repeater (Sender):
-#   timeout = 24
-#   def send (self, payload):
-#     while self.link.received( ) < 1 and not self.timedout( ):
-#       self.link.write(payload)
-#       self.link.triggerTX( )
-#       self.link.write(payload)
-#       self.link.triggerTX( )
-#       self.link.sleep( )
-#   def timedout (self):
-#     now = time.time( )
-#     return now - self.start > self.timeout
-#   def __call__ (self, command):
-#     self.start = time.time( )
-#     link = self.link
-#     # empty buffer
-#     link.dump_rx_buffer( )
-#     self.prelude(command)
-#     while not self.done( ) and not self.timedout( ):
-#       for buf in link.dump_rx_buffer( ):
-#         # print lib.hexdump(buf)
-#         resp = Packet.fromBuffer(buf)
-#         # print "pkt resp", resp
-#         if resp.valid and resp.serial == self.command.serial:
-#           self.upload( )
-#           self.wait_for_ack( )
-#           # self.respond(resp)
-#           return command
-#         else:
-#           self.prelude(command)
-#     print 'frames',  len(self.frames)
-#     return command
+class Repeater (Sender):
+  def __call__ (self, command, repetitions):
+    pkt = Packet.fromCommand(command, serial=command.serial)
+    buf = pkt.assemble( )
+    print "sending", str(buf).encode('hex')
+    encoded = FourBySix.encode(buf)
 
+    while not self.timedout( ):
+      self.link.repeat_write(encoded, repetitions)
+
+    # Check if we now get a response
+    # resp = self.wait_for_ack( )
+
+    return command
 
 class Pump (session.Pump):
   def __init__ (self, link, serial):
@@ -190,13 +170,14 @@ class Pump (session.Pump):
     log.info('BEGIN POWER CONTROL %s' % self.serial)
     # print "PowerControl SERIAL", self.serial
     command = commands.PowerControl(**dict(minutes=minutes, serial=self.serial))
-    transfer = Repeater(self.link)
-    response = transfer(command)
+    repeater = Repeater(self.link)
+    repeater(command, 500)
+
     # response = self.query(commands.PowerControl, minutes=minutes)
-    power = response
-    log.info('manually download PowerControl serial %s' % self.serial)
-    data = dict(raw=str(power.data).encode('hex'), ok=power.done( ), minutes=minutes)
-    return data
+    # power = response
+    # log.info('manually download PowerControl serial %s' % self.serial)
+    # data = dict(raw=str(power.data).encode('hex'), ok=power.done( ), minutes=minutes)
+    # return data
 
   def execute (self, command):
     command.serial = self.serial

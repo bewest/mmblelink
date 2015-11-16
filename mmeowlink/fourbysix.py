@@ -81,5 +81,3 @@ class FourBySix (object):
       decoded_hex = ''.join(symbols)
       data = bytearray(str(decoded_hex).decode('hex'))
     return data
-
-

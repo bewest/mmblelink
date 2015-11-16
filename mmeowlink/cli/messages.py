@@ -9,11 +9,13 @@ class SendMsgApp (messages.SendMsgApp):
   mmeowlink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
+    parser.add_argument('--locale', default='US', choices=['EU', 'US'])
     parser = super(SendMsgApp, self).customize_parser(parser)
     return parser
+
   def prelude (self, args):
-    self.link = link = Link()
-    link.open( )
+    self.link = link = Link(locale=args.locale)
+    link.open()
     # get link
     # drain rx buffer
     self.pump = Pump(self.link, args.serial)
