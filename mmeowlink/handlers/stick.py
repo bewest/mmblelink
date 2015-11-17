@@ -97,13 +97,11 @@ class Sender (object):
 
   def wait_response (self):
     link = self.link
-    while True:                 # FIXME - infinite loop - we need a timeout
-      buf = link.read( )
-      resp = Packet.fromBuffer(buf)
-      if self.responds_to(resp):
-        print "READ"
-        print lib.hexdump(buf)
-        return resp
+    buf = link.read( )
+    resp = Packet.fromBuffer(buf)
+    if self.responds_to(resp):
+      print lib.hexdump(buf)
+      return resp
 
   def prelude (self):
     link = self.link
@@ -118,9 +116,7 @@ class Sender (object):
     print "sending", str(buf).encode('hex')
     encoded =  FourBySix.encode(buf)
     self.send(encoded)
-    # while not self.done():
-    #   print "searching response for ", command, 'done? ', self.done( )
-    #   # self.wait_for_ack( )
+    print "searching response for ", command, 'done? ', self.done( )
 
   def upload (self):
     params = self.command.params
@@ -131,13 +127,14 @@ class Sender (object):
       self.wait_for_ack( )
       print "have ack"
       self.send_params( )
-      self.wait_for_ack( )
+      # self.wait_for_ack( )
 
   def __call__ (self, command):
     self.command = command
 
     self.prelude()
     self.upload()
+
     while not self.done( ):
       resp = self.wait_response( )
       if resp:
