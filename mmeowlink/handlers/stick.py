@@ -43,48 +43,48 @@ class Sender (object):
 #     self.link.write(encoded)
 #     self.link.triggerTX( )
 #
-#   def unframe (self, resp):
-#     payload = resp.payload
-#     if self.expected > 64:
-#       num, payload = payload[0], payload[1:]
-#       self.frames.append((num, payload))
-#       self.ack( )
-#     print "len", len(payload)
-#     self.command.respond(payload)
-#
+  def unframe (self, resp):
+    payload = resp.payload
+    if self.expected > 64:
+      num, payload = payload[0], payload[1:]
+      self.frames.append((num, payload))
+      self.ack( )
+    print "len", len(payload)
+    self.command.respond(payload)
+
   def done (self):
     needs_params = self.command.params and len(self.command.params) > 0 or False
     if needs_params and not self.sent_params:
       return False
     return self.command.done( )
 
-#   def respond (self, resp):
-#     if resp.valid and resp.serial == self.command.serial:
-#       if resp.op == 0x06:
-#         # if not self.command.done( ) or (self.command.params and not self.sent_params):
-#         print "done?", self.command, self.done( )
-#         if not self.done( ):
-#           print "got ack but not done"
-#           return self.command
-#         else:
-#           return self.command
-#       if resp.op == self.command.code:
-#         # self.command.respond(resp.payload)
-#         self.unframe(resp)
-#         # print "len", len(resp.payload)
-#         if self.done( ):
-#           return self.command
-#         else:
-#           print "not done", len(self.frames)
-#           # self.ack( )
-#           pass
-#
+  def respond (self, resp):
+    if resp.valid and resp.serial == self.command.serial:
+      if resp.op == 0x06:
+        # if not self.command.done( ) or (self.command.params and not self.sent_params):
+        print "done?", self.command, self.done( )
+        if not self.done( ):
+          print "got ack but not done"
+          return self.command
+        else:
+          return self.command
+      if resp.op == self.command.code:
+        # self.command.respond(resp.payload)
+        self.unframe(resp)
+        # print "len", len(resp.payload)
+        if self.done( ):
+          return self.command
+        else:
+          print "not done", len(self.frames)
+          # self.ack( )
+          pass
+
   def wait_for_ack (self):
     link = self.link
 
     while not self.done( ):
       buf = link.read( )
-      print lib.hexdump(buf)
+
       resp = Packet.fromBuffer(buf)
       if self.responds_to(resp):
         if resp.op == 0x06:
@@ -95,15 +95,16 @@ class Sender (object):
   def responds_to (self, resp):
     return resp.valid and resp.serial == self.command.serial
 
-#   def wait_response (self):
-#     link = self.link
-#     for buf in link.dump_rx_buffer( ):
-#       resp = Packet.fromBuffer(buf)
-#       if self.responds_to(resp):
-#         print "READ"
-#         print lib.hexdump(buf)
-#         return resp
-#
+  def wait_response (self):
+    link = self.link
+    while True:                 # FIXME - infinite loop - we need a timeout
+      buf = link.read( )
+      resp = Packet.fromBuffer(buf)
+      if self.responds_to(resp):
+        print "READ"
+        print lib.hexdump(buf)
+        return resp
+
   def prelude (self):
     link = self.link
     command = self.command
@@ -117,9 +118,9 @@ class Sender (object):
     print "sending", str(buf).encode('hex')
     encoded =  FourBySix.encode(buf)
     self.send(encoded)
-    while not self.done():
-      print "searching response for ", command, 'done? ', self.done( )
-      self.wait_for_ack( )
+    # while not self.done():
+    #   print "searching response for ", command, 'done? ', self.done( )
+    #   # self.wait_for_ack( )
 
   def upload (self):
     params = self.command.params
@@ -137,14 +138,19 @@ class Sender (object):
 
     self.prelude()
     self.upload()
-    # while not self.done( ):
-    #   for buf in link.dump_rx_buffer( ):
-    #     print lib.hexdump(buf)
-    #     resp = Packet.fromBuffer(buf)
-    #     print "pkt resp", resp
-    #     if resp.valid and resp.serial == self.command.serial:
-    #       self.respond(resp)
-    # print 'frames',  len(self.frames)
+    while not self.done( ):
+      resp = self.wait_response( )
+      if resp:
+        self.respond(resp)
+      """
+      for buf in link.dump_rx_buffer( ):
+        print lib.hexdump(buf)
+        resp = Packet.fromBuffer(buf)
+        print "pkt resp", resp
+        if resp.valid and resp.serial == self.command.serial:
+          self.respond(resp)
+      """
+    print 'frames',  len(self.frames)
     return command
 #
 class Repeater (Sender):

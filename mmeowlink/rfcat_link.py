@@ -92,7 +92,6 @@ class Link( object ):
       kwds['timeout'] = self.__timeout__
 
     if not self.rfcat:
-      print("Loading rfcat")
       self.rfcat = RfCat()
       setup_medtronic_mmcommander(self.rfcat, self.locale)
       self.rfcat.setMaxPower()
@@ -131,8 +130,8 @@ class Link( object ):
     r = rfcat_response[0].split('\x00')[0]
     io.info('read encoded %r' % r)
     io.info('read decoded %s' % FourBySix.decode(bytearray(r)))
-    # io.info( 'usb.read.raw:\n%s' % ( lib.hexdump( bytearray( r[0] ) ) ) )
-    return r
+
+    return FourBySix.decode(bytearray(r))
 
   def readline( self ):
     raise NotImplementedException("readline currently not implemented")

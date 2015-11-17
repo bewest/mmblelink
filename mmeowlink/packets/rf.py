@@ -6,7 +6,6 @@ from datetime import datetime
 from decocare import lib
 
 _Packet = namedtuple('Packet', [
-  'rssi', 'seq',
   'type', 'serial', 'op', 'payload', 'crc',
   'date', 'dateString', 'valid', 'chan',
   'payload_hex'
@@ -17,14 +16,12 @@ class Packet (_Packet):
   @classmethod
   def fromCommand (klass, command, payload=bytearray([0x00]), serial=None,
                           stamp=None, timezone=None, chan=None,
-                          rssi=None, seq=None, crc=None, valid=None):
+                          crc=None, valid=None):
     stamp = stamp or time.time( )
     dt = datetime.fromtimestamp(stamp).replace(tzinfo=timezone)
     rftype = 0xA7
     record = dict(date=stamp * 1000
            , dateString=dt.isoformat( )
-           , rssi = rssi
-           , seq = seq
            , type = rftype
            , serial=serial
            , op = command.code
@@ -75,11 +72,10 @@ class Packet (_Packet):
     # dt = datetime.fromtimestamp(stamp).replace(tzinfo=self.args.timezone)
     dt = datetime.fromtimestamp(stamp).replace(tzinfo=timezone)
     msg = lib.hexdump(buf)
-    head = buf[0:2]
-    rssi, seq = struct.unpack('bB', str(head))
 
-    rfpacket = buf[2:]
-    rftype   = buf[0]
+    # head = buf[0:2]
+    rfpacket = buf
+    rftype   = rfpacket[0]
     serial   = str(rfpacket[1:4]).encode('hex')
     command  = None
     payload  = None
@@ -94,8 +90,6 @@ class Packet (_Packet):
       valid = calculated == crc
     record = dict(date=stamp * 1000
            , dateString=dt.isoformat( )
-           , rssi = rssi
-           , seq = seq
            , type = rftype
            , serial=serial
            , op = command
