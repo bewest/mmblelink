@@ -4,6 +4,12 @@ Please note that this is not yet in a working state! I'm running this project
 with the [Release Early, Release Often](https://en.wikipedia.org/wiki/Release_early,_release_often)
 methodology.
 
+# Troubleshooting
+
+If you receive this message, you should un-plug and plug-in the USB dongle:
+
+  Error in resetup():USBError(110, u'Operation timed out')
+
 # MMeowlink
 
 Use OpenAPS with a USB controller other than the Minimed-Supplied CareLink
