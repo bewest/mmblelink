@@ -2,8 +2,10 @@
 from decocare import session, lib, commands
 from mmeowlink.packets.rf import Packet
 from mmeowlink.fourbysix import FourBySix
+
 import logging
 import time
+
 from decocare import lib
 io  = logging.getLogger( )
 log = io.getChild(__name__)
@@ -18,31 +20,30 @@ class Sender (object):
   def send (self, payload):
     self.link.write(payload)
 
-  # def send_params (self):
-  #   command = self.command
-  #   params = self.command.params
-  #   payload = bytearray([len(params)]) + bytearray(params)
-  #   missing = [ ]
-  #   missing = bytearray([0x00]) * (64 - len(params))
-  #   payload = payload + missing
-  #   pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
-  #   pkt = pkt.update(payload)
-  #   buf = pkt.assemble( )
-  #   print "sending PARAMS", str(buf).encode('hex')
-  #   encoded =  FourBySix.encode(buf)
-  #   self.link.write(encoded)
-  #   self.sent_params = True
-#
-#   def ack (self):
-#     null = bytearray([0x00])
-#     pkt = Packet.fromCommand(self.command, payload=null, serial=self.command.serial)
-#     pkt = pkt._replace(payload=null, op=0x06)
-#     buf = pkt.assemble( )
-#     print "ACK tx", str(buf).encode('hex')
-#     encoded =  FourBySix.encode(buf)
-#     self.link.write(encoded)
-#     self.link.triggerTX( )
-#
+  def send_params (self):
+    command = self.command
+    params = self.command.params
+    payload = bytearray([len(params)]) + bytearray(params)
+    missing = [ ]
+    missing = bytearray([0x00]) * (64 - len(params))
+    payload = payload + missing
+    pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
+    pkt = pkt.update(payload)
+    buf = pkt.assemble( )
+    print "sending PARAMS", str(buf).encode('hex')
+    encoded = FourBySix.encode(buf)
+    self.link.write(encoded)
+    self.sent_params = True
+
+  def ack (self):
+    null = bytearray([0x00])
+    pkt = Packet.fromCommand(self.command, payload=null, serial=self.command.serial)
+    pkt = pkt._replace(payload=null, op=0x06)
+    buf = pkt.assemble( )
+    print "ACK tx", str(buf).encode('hex')
+    encoded = FourBySix.encode(buf)
+    self.link.write(encoded)
+
   def unframe (self, resp):
     payload = resp.payload
     if self.expected > 64:
@@ -79,17 +80,17 @@ class Sender (object):
           # self.ack( )
           pass
 
-  def wait_for_ack (self):
+  def wait_for_ack (self, timeout=5000):
     link = self.link
 
     while not self.done( ):
-      buf = link.read( )
+      buf = link.read( timeout=timeout )
 
       resp = Packet.fromBuffer(buf)
       if self.responds_to(resp):
         if resp.op == 0x06:
           # self.unframe(resp)
-          print "found valid ACK"
+          print "found valid ACK - %s" % str(buf).encode('hex')
           return resp
 
   def responds_to (self, resp):
@@ -151,19 +152,28 @@ class Sender (object):
     return command
 #
 class Repeater (Sender):
-  def __call__ (self, command, repetitions):
-    pkt = Packet.fromCommand(command, serial=command.serial)
+  def __call__ (self, command, repeat_seconds=15, ack_wait_seconds=15):
+    self.command = command
+
+    pkt = Packet.fromCommand(self.command, serial=self.command.serial)
     buf = pkt.assemble( )
-    print "sending", str(buf).encode('hex')
+    print('Sending message %s for %i seconds' % (str(buf).encode('hex'), repeat_seconds))
     encoded = FourBySix.encode(buf)
 
-    while not self.timedout( ):
-      self.link.repeat_write(encoded, repetitions)
+    start_time = time.time()
+    xmits = 0
+    while ( (time.time() - start_time) <= repeat_seconds ):
+      self.link.write(encoded)
+      xmits = xmits + 1
 
-    # Check if we now get a response
-    # resp = self.wait_for_ack( )
+    print('Sent messages: %s (%s/second, %s/message)' % (xmits, xmits/float(repeat_seconds), repeat_seconds/float(xmits)))
 
-    return command
+    # Look for an ack
+    print('Waiting for pump acknowledgement')
+    self.wait_for_ack(timeout=ack_wait_seconds * 1000)
+    print('Successfully received pump response')
+
+    # return self.command
 
 class Pump (session.Pump):
   def __init__ (self, link, serial):
@@ -172,9 +182,13 @@ class Pump (session.Pump):
   def power_control (self, minutes=None):
     log.info('BEGIN POWER CONTROL %s' % self.serial)
     # print "PowerControl SERIAL", self.serial
-    command = commands.PowerControl(**dict(minutes=minutes, serial=self.serial))
+    self.command = commands.PowerControl(**dict(minutes=minutes, serial=self.serial))
     repeater = Repeater(self.link)
-    repeater(command, 500)
+
+    # Power on transmission must run for at least 8.5 seconds, so we send
+    # for 9 seconds, just be safe. We should then get a 'ACK' message
+    # within 11 seconds. We wait for an ack for up to 15 seconds just in case
+    repeater(self.command)
 
     # response = self.query(commands.PowerControl, minutes=minutes)
     # power = response

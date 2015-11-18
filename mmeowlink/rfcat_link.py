@@ -112,19 +112,8 @@ class Link( object ):
                                          lib.hexdump( bytearray( string ) ) ) )
     return len(string)
 
-  def repeat_write( self, string, repeat ):
-    for _ in range(0, repeat):
-      self.rfcat.RFxmit(string)
-      self.reset_rfcat()
-
-    io.info( 'usb.write.len(%s repetitions): %s\n%s' % ( repeat, len( string ),
-                                         lib.hexdump( bytearray( string ) ) ) )
-    return len(string)
-
-    r = self.rfcat.RFrecv(timeout=5000)
-
-  def read( self ):
-    rfcat_response = self.rfcat.RFrecv(timeout=5000)
+  def read( self, timeout=5000):
+    rfcat_response = self.rfcat.RFrecv(timeout=timeout)
     self.reset_rfcat()
 
     r = rfcat_response[0].split('\x00')[0]
