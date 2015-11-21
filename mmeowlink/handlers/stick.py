@@ -2,11 +2,13 @@
 from decocare import session, lib, commands
 from mmeowlink.packets.rf import Packet
 from mmeowlink.fourbysix import FourBySix
+from rflib.chipcon_usb import ChipconUsbTimeoutException
 
 import logging
 import time
 
 from decocare import lib
+
 io  = logging.getLogger( )
 log = io.getChild(__name__)
 
@@ -114,7 +116,7 @@ class Sender (object):
     self.pkt = Packet.fromCommand(command, payload=payload, serial=command.serial)
     self.pkt = self.pkt.update(payload)
     buf = self.pkt.assemble( )
-    print "sending", str(buf).encode('hex')
+    print "sending prelude", str(buf).encode('hex')
     encoded =  FourBySix.encode(buf)
     self.send(encoded)
     print "searching response for ", command, 'done? ', self.done( )
@@ -176,9 +178,13 @@ class Repeater (Sender):
     # return self.command
 
 class Pump (session.Pump):
+  MAX_RETRIES = 3
+  RETRY_BACKOFF = 1
+
   def __init__ (self, link, serial):
     self.link = link
     self.serial = serial
+
   def power_control (self, minutes=None):
     log.info('BEGIN POWER CONTROL %s' % self.serial)
     # print "PowerControl SERIAL", self.serial
@@ -199,5 +205,10 @@ class Pump (session.Pump):
   def execute (self, command):
     command.serial = self.serial
 
-    sender = Sender(self.link)
-    return sender(command)
+    for retry_count in range(self.MAX_RETRIES):
+      try:
+          sender = Sender(self.link)
+          return sender(command)
+      except ChipconUsbTimeoutException:
+          log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
+          time.sleep(self.RETRY_BACKOFF * retry_count)
