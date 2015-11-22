@@ -79,6 +79,8 @@ def setup_medtronic_uart (self):
   sleep_interval = float(self.device.get('sleep_interval', .020))
   self.uart = link.Link(mac or self.scanner( ), sleep_interval)
   self.uart.open( )
+  self.uart.channel.setTX(messages.choose_channel(self.device.get('tx', '2')))
+  self.uart.channel.setRX(messages.choose_channel(self.device.get('rx', '0')))
   self.pump = Pump(self.uart, serial)
   # stats = self.uart.interface_stats( )
 
@@ -89,43 +91,28 @@ class MedtronicTask (scan, medtronic.MedtronicTask):
   def setup_medtronic (self):
     setup_medtronic_uart(self)
     return
-    log = logging.getLogger(decocare.__name__)
-    level = getattr(logging, self.device.get('logLevel', 'WARN'))
-    address = self.device.get('logAddress', '/dev/log')
-    log.setLevel(level)
-    for previous in log.handlers[:]:
-      log.removeHandler(previous)
-    log.addHandler(logging.handlers.SysLogHandler(address=address))
-    serial = self.device.get('serial')
-    mac = self.device.get('mac', None)
-    if mac is None:
-      mac = self.scanner( )
-    sleep_interval = float(self.device.get('sleep_interval', .020))
-    self.uart = link.Link(mac or self.scanner( ), sleep_interval)
-    self.uart.open( )
-    self.pump = Pump(self.uart, serial)
-    # stats = self.uart.interface_stats( )
 
-def make (usage):
-  class EmulatedUsage (usage, MedtronicTask):
+def make (usage, Master=MedtronicTask, setup_func=setup_medtronic_uart):
+  class EmulatedUsage (usage, Master):
     __doc__ = usage.__doc__
     __name__ = usage.__name__
     def setup_medtronic (self):
-      setup_medtronic_uart(self)
+      setup_func(self)
 
   # EmulatedUsage.__doc__ = usage.__doc__
   EmulatedUsage.__name__ = usage.__name__
   return EmulatedUsage
-def substitute (name, usage):
-  if issubclass(usage, medtronic.MedtronicTask):
-    adapted = make(usage)
+def substitute (name, usage, Master=MedtronicTask, Original=medtronic.MedtronicTask, setup_func=setup_medtronic_uart):
+  if issubclass(usage, Original):
+    adapted = make(usage, Master=Master, setup_func=setup_func)
     adapted.__name__ = name
     if name not in use.__USES__:
       use.__USES__[name] = adapted
       return use
 
 def set_config (args, device):
-  device.add_option('mac', args.mac)
+  device.add_option('tx', '2')
+  device.add_option('rx', '0')
   device.add_option('serial', args.serial)
 
 def display_device (device):
