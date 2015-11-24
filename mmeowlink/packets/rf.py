@@ -66,6 +66,7 @@ class Packet (_Packet):
     buf.extend(self.payload)
     calculated = lib.CRC8.compute(buf)
     return calculated
+
   @classmethod
   def fromBuffer (klass, buf, stamp=None, timezone=None, chan=None):
     stamp = stamp or time.time( )
@@ -81,6 +82,8 @@ class Packet (_Packet):
     payload  = None
     crc      = None
     valid    = False
+
+    import pdb; pdb.set_trace
     if serial and len(rfpacket) > 5:
       rftype   = rfpacket[0]
       command  = rfpacket[4]

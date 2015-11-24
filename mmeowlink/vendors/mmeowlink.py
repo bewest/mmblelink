@@ -17,7 +17,7 @@ from dateutil import relativedelta
 from dateutil.parser import parse
 
 from .. cli import messages
-from .. import rfcat_link as link
+from .. import rfcat_link
 from .. handlers.stick import Pump
 
 
@@ -63,21 +63,38 @@ def setup_logging (self):
     log.removeHandler(previous)
   log.addHandler(logging.handlers.SysLogHandler(address=address))
 
-def setup_medtronic_uart (self):
+def setup_medtronic_link (self):
   serial = self.device.get('serial')
 
-  self.uart.open( )
-  self.pump = Pump(self.uart, serial)
-  # stats = self.uart.interface_stats( )
+  link = rfcat_link.Link( locale='EU' )
+  self.pump = Pump(link, serial)
 
 
 import logging
 import logging.handlers
-class MedtronicTask (scan, medtronic.MedtronicTask):
+class MedtronicTask (medtronic.MedtronicTask):
   def setup_medtronic (self):
     setup_logging(self)
-    setup_medtronic_uart(self)
+    setup_medtronic_link(self)
     return
+
+def make (usage, Master=MedtronicTask, setup_func=setup_medtronic_link):
+  class EmulatedUsage (usage, Master):
+    __doc__ = usage.__doc__
+    __name__ = usage.__name__
+    def setup_medtronic (self):
+      setup_func(self)
+
+  # EmulatedUsage.__doc__ = usage.__doc__
+  EmulatedUsage.__name__ = usage.__name__
+  return EmulatedUsage
+def substitute (name, usage, Master=MedtronicTask, Original=medtronic.MedtronicTask, setup_func=setup_medtronic_link):
+  if issubclass(usage, Original):
+    adapted = make(usage, Master=Master, setup_func=setup_func)
+    adapted.__name__ = name
+    if name not in use.__USES__:
+      use.__USES__[name] = adapted
+      return use
 
 def set_config (args, device):
   device.add_option('serial', args.serial)
