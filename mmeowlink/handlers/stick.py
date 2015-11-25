@@ -48,7 +48,6 @@ class Sender (object):
 
   def unframe (self, resp):
     payload = resp.payload
-    import pdb; pdb.set_trace()
     if self.expected > 64:
       num, payload = payload[0], payload[1:]
       self.frames.append((num, payload))
@@ -187,7 +186,6 @@ class Pump (session.Pump):
     self.serial = serial
 
   def power_control (self, minutes=None):
-    return "FIXME"
     """ Control Pumping """
     log.info('BEGIN POWER CONTROL %s' % self.serial)
     # print "PowerControl SERIAL", self.serial
