@@ -76,25 +76,24 @@ class Packet (_Packet):
 
     # head = buf[0:2]
     rfpacket = buf
-    rftype   = rfpacket[0]
+    rftype   = buf[0]
     serial   = str(rfpacket[1:4]).encode('hex')
     command  = None
     payload  = None
     crc      = None
     valid    = False
 
-    import pdb; pdb.set_trace
     if serial and len(rfpacket) > 5:
       rftype   = rfpacket[0]
       command  = rfpacket[4]
-      payload  = rfpacket[5:-1]
+      payload  = rfpacket[6:-1]
       crc = int(rfpacket[-1])
       calculated = lib.CRC8.compute(rfpacket[:-1])
       valid = calculated == crc
     record = dict(date=stamp * 1000
            , dateString=dt.isoformat( )
            , type = rftype
-           , serial=serial
+           , serial = serial
            , op = command
            , payload = payload
            , payload_hex = str(payload).encode('hex')
