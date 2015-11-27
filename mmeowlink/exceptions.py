@@ -1,0 +1,2 @@
+class InvalidPacketReceived(Exception):
+  pass

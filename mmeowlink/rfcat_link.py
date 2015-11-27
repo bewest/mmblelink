@@ -87,6 +87,13 @@ class Link( object ):
 
     self.open()
 
+  def __del__( self ):
+    if self.rfcat:
+      try:
+        self.rfcat.setModeIdle()
+      except:
+        pass
+
   def open( self, newPort=None, **kwds ):
     if 'timeout' not in kwds:
       kwds['timeout'] = self.__timeout__
@@ -99,6 +106,10 @@ class Link( object ):
 
     log.info( '{agent} started RfCat library'
       .format(agent=self.__class__.__name__ ))
+
+  def debug( self ):
+    if self.rfcat:
+      self.rfcat._debug = 2
 
   def close( self ):
     io.info( 'deallocating rfcat' )

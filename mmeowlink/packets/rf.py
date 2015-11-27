@@ -5,6 +5,8 @@ import struct
 from datetime import datetime
 from decocare import lib
 
+from mmeowlink.exceptions import InvalidPacketReceived
+
 _Packet = namedtuple('Packet', [
   'type', 'serial', 'op', 'payload', 'crc',
   'date', 'dateString', 'valid', 'chan',
@@ -90,6 +92,10 @@ class Packet (_Packet):
       crc = int(rfpacket[-1])
       calculated = lib.CRC8.compute(rfpacket[:-1])
       valid = calculated == crc
+
+    if not valid:
+      raise InvalidPacketReceived
+
     record = dict(date=stamp * 1000
            , dateString=dt.isoformat( )
            , type = rftype

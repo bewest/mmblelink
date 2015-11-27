@@ -2,6 +2,8 @@
 from decocare import session, lib, commands
 from mmeowlink.packets.rf import Packet
 from mmeowlink.fourbysix import FourBySix
+from mmeowlink.exceptions import InvalidPacketReceived
+
 from rflib.chipcon_usb import ChipconUsbTimeoutException
 
 import logging
@@ -9,10 +11,17 @@ import time
 
 from decocare import lib
 
+class NoPumpResponseToRepeatLoop(Exception):
+  pass
+
+
 io  = logging.getLogger( )
 log = io.getChild(__name__)
 
 class Sender (object):
+  MAX_RETRIES = 3
+  RETRY_BACKOFF = 1
+
   sent_params = False
   expected = 64
   def __init__ (self, link):
@@ -135,26 +144,25 @@ class Sender (object):
   def __call__ (self, command):
     self.command = command
 
-    self.prelude()
-    self.upload()
+    for retry_count in range(self.MAX_RETRIES):
+      try:
+        self.prelude()
+        self.upload()
 
-    while not self.done( ):
-      resp = self.wait_response( )
-      if resp:
-        self.respond(resp)
-      """
-      for buf in link.dump_rx_buffer( ):
-        print lib.hexdump(buf)
-        resp = Packet.fromBuffer(buf)
-        print "pkt resp", resp
-        if resp.valid and resp.serial == self.command.serial:
-          self.respond(resp)
-      """
-    print 'frames',  len(self.frames)
-    return command
-#
+        while not self.done( ):
+          resp = self.wait_response( )
+          if resp:
+            self.respond(resp)
+
+        return command
+      except InvalidPacketReceived:
+        log.error("Invalid Packet Received - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
+      except ChipconUsbTimeoutException:
+        log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
+      time.sleep(self.RETRY_BACKOFF * retry_count)
+
 class Repeater (Sender):
-  def __call__ (self, command, repeat_seconds=15, ack_wait_seconds=15):
+  def __call__ (self, command, repeat_seconds=10, ack_wait_seconds=15):
     self.command = command
 
     pkt = Packet.fromCommand(self.command, serial=self.command.serial)
@@ -170,12 +178,21 @@ class Repeater (Sender):
 
     print('Sent messages: %s (%s/second, %s/message)' % (xmits, xmits/float(repeat_seconds), repeat_seconds/float(xmits)))
 
-    # Look for an ack
-    print('Waiting for pump acknowledgement')
-    self.wait_for_ack(timeout=ack_wait_seconds * 1000)
-    print('Successfully received pump response')
+    for retry_count in range(self.MAX_RETRIES):
+      try:
+        self.link.write(encoded)
+        # Look for an ack
+        print('Waiting for pump acknowledgement')
+        self.wait_for_ack(timeout=ack_wait_seconds * 1000)
+        print('Successfully received pump response')
+        return True
+      except InvalidPacketReceived:
+        log.error("Invalid Packet Received - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
+      except ChipconUsbTimeoutException:
+        log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
+      time.sleep(self.RETRY_BACKOFF * retry_count)
 
-    # return self.command
+    raise NoPumpResponseToRepeatLoop("No pump response to %i messages over %i seconds with %i retries" % (xmits, repeat_seconds, retry_count))
 
 class Pump (session.Pump):
   MAX_RETRIES = 3
