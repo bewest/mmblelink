@@ -81,7 +81,7 @@ def make (usage, Master=MedtronicTask, setup_func=setup_medtronic_link):
   class EmulatedUsage (usage, Master):
     __doc__ = usage.__doc__
     __name__ = usage.__name__
-    self.uart = None        # Unused attribute - but is required for OpenAPS
+    uart = None        # Unused attribute - but is required for OpenAPS
 
     def setup_medtronic (self):
       setup_func(self)

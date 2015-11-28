@@ -56,12 +56,13 @@ class Sender (object):
     self.link.write(encoded)
 
   def unframe (self, resp):
-    payload = resp.payload
     if self.expected > 64:
-      num, payload = payload[0], payload[1:]
-      self.frames.append((num, payload))
+      num, payload = resp.payload[0], resp.payload[1:]
+      self.frames.append((num, resp.payload))
       self.ack( )
-    print "len", len(payload)
+    else:
+      payload = resp.payload[1:]
+
     self.command.respond(payload)
 
   def done (self):

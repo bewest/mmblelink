@@ -88,7 +88,7 @@ class Packet (_Packet):
     if serial and len(rfpacket) > 5:
       rftype   = rfpacket[0]
       command  = rfpacket[4]
-      payload  = rfpacket[6:-1]
+      payload  = rfpacket[5:-1]
       crc = int(rfpacket[-1])
       calculated = lib.CRC8.compute(rfpacket[:-1])
       valid = calculated == crc
