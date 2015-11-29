@@ -17,9 +17,10 @@ from dateutil import relativedelta
 from dateutil.parser import parse
 
 from .. cli import messages
-from .. import rfcat_link
+from .. import mmcommander_link
 from .. handlers.stick import Pump
 
+from mmcommander_scan import scan
 
 def configure_use_app (app, parser):
   pass
@@ -49,7 +50,7 @@ use = Registry( )
 #   def configure_app (self, app, parser):
 #     pass
 #   def scanner (self):
-#     from rfcat_scan import scan
+#     from mmcommander_scan import scan
 #     return scan( )
 #   def main (self, args, app):
 #     return self.scanner( )
@@ -66,7 +67,9 @@ def setup_logging (self):
 def setup_medtronic_link (self):
   serial = self.device.get('serial')
 
-  link = rfcat_link.Link( locale='EU' )
+  port = scan()
+
+  link = mmcommander_link.Link( port )
   self.pump = Pump(link, serial)
 
 import logging

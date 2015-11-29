@@ -1,7 +1,8 @@
 
 
 from decocare.helpers import messages
-from mmeowlink.rfcat_link import Link
+from mmeowlink.mmcommander_link import Link
+from mmeowlink.vendors import mmcommander_scan
 from mmeowlink.handlers.stick import Pump
 
 class SendMsgApp (messages.SendMsgApp):
@@ -9,12 +10,12 @@ class SendMsgApp (messages.SendMsgApp):
   mmeowlink adapter to decocare's SendMsgApp
   """
   def customize_parser (self, parser):
-    parser.add_argument('--locale', default='US', choices=['EU', 'US'])
     parser = super(SendMsgApp, self).customize_parser(parser)
     return parser
 
   def prelude (self, args):
-    self.link = link = Link(locale=args.locale)
+    port = mmcommander_scan.scan()
+    self.link = link = Link( port=port )
     link.open()
     # get link
     # drain rx buffer

@@ -13,11 +13,11 @@ function help_message ( ) {
 $self <cmd>
 
 Valid commands:
-  mmeowlink 
+  mmeowlink
   mmeowlink env
   mmeowlink scan
   mmeowlink help - this message
-  mmeowlink emulate 
+  mmeowlink emulate
   mmeowlink monitor
 EOF
 }
@@ -29,7 +29,7 @@ env)
   exit
   ;;
 scan)
-  python -m mmeowlink.rfcat_link $*
+  python -m mmeowlink.mmcommander_link $*
   ;;
 duplex)
   RX=$1
@@ -62,5 +62,3 @@ help)
   test -n "$COMMAND" && exec $COMMAND $*
   ;;
 esac
-
-

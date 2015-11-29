@@ -2,9 +2,8 @@
 from decocare import session, lib, commands
 from mmeowlink.packets.rf import Packet
 from mmeowlink.fourbysix import FourBySix
-from mmeowlink.exceptions import InvalidPacketReceived
+from mmeowlink.exceptions import InvalidPacketReceived, TimeoutException
 
-from rflib.chipcon_usb import ChipconUsbTimeoutException
 
 import logging
 import time
@@ -42,8 +41,8 @@ class Sender (object):
     pkt = pkt.update(payload)
     buf = pkt.assemble( )
     print "sending PARAMS", str(buf).encode('hex')
-    encoded = FourBySix.encode(buf)
-    self.link.write(encoded)
+    # encoded = FourBySix.encode(buf)
+    self.link.write(buf)
     self.sent_params = True
 
   def ack (self):
@@ -52,8 +51,8 @@ class Sender (object):
     pkt = pkt._replace(payload=null, op=0x06)
     buf = pkt.assemble( )
     print "ACK tx", str(buf).encode('hex')
-    encoded = FourBySix.encode(buf)
-    self.link.write(encoded)
+    # encoded = FourBySix.encode(buf)
+    self.link.write(buf)
 
   def unframe (self, resp):
     if self.expected > 64:
@@ -92,7 +91,7 @@ class Sender (object):
           # self.ack( )
           pass
 
-  def wait_for_ack (self, timeout=5000):
+  def wait_for_ack (self, timeout=.500):
     link = self.link
 
     while not self.done( ):
@@ -127,8 +126,8 @@ class Sender (object):
     self.pkt = self.pkt.update(payload)
     buf = self.pkt.assemble( )
     print "sending prelude", str(buf).encode('hex')
-    encoded =  FourBySix.encode(buf)
-    self.send(encoded)
+    # encoded =  FourBySix.encode(buf)
+    self.send(buf)
     print "searching response for ", command, 'done? ', self.done( )
 
   def upload (self):
@@ -158,7 +157,7 @@ class Sender (object):
         return command
       except InvalidPacketReceived:
         log.error("Invalid Packet Received - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
-      except ChipconUsbTimeoutException:
+      except TimeoutException:
         log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
       time.sleep(self.RETRY_BACKOFF * retry_count)
 
@@ -169,28 +168,26 @@ class Repeater (Sender):
     pkt = Packet.fromCommand(self.command, serial=self.command.serial)
     buf = pkt.assemble( )
     print('Sending message %s for %i seconds' % (str(buf).encode('hex'), repeat_seconds))
-    encoded = FourBySix.encode(buf)
+    # encoded = FourBySix.encode(buf)
 
     start_time = time.time()
     xmits = 0
     while ( (time.time() - start_time) <= repeat_seconds ):
-      self.link.write(encoded, reset_after_send=False)
+      self.link.write(buf, reset_after_send=False)
       xmits = xmits + 1
 
     print('Sent messages: %s (%s/second, %s/message)' % (xmits, xmits/float(repeat_seconds), repeat_seconds/float(xmits)))
 
     for retry_count in range(self.MAX_RETRIES):
       try:
-        self.link.write(encoded)
+        self.link.write(buf)
         # Look for an ack
         print('Waiting for pump acknowledgement')
-        self.wait_for_ack(timeout=ack_wait_seconds * 1000)
+        self.wait_for_ack(timeout=ack_wait_seconds)
         print('Successfully received pump response')
         return True
       except InvalidPacketReceived:
         log.error("Invalid Packet Received - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
-      except ChipconUsbTimeoutException:
-        log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
       time.sleep(self.RETRY_BACKOFF * retry_count)
 
     raise NoPumpResponseToRepeatLoop("No pump response to %i messages over %i seconds with %i retries" % (xmits, repeat_seconds, retry_count))
@@ -228,6 +225,6 @@ class Pump (session.Pump):
       try:
           sender = Sender(self.link)
           return sender(command)
-      except ChipconUsbTimeoutException:
+      except TimeoutException:
           log.error("Timed out - retrying: %s of %s" % (retry_count, self.MAX_RETRIES))
           time.sleep(self.RETRY_BACKOFF * retry_count)
