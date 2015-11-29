@@ -174,7 +174,7 @@ class Repeater (Sender):
     start_time = time.time()
     xmits = 0
     while ( (time.time() - start_time) <= repeat_seconds ):
-      self.link.write(encoded)
+      self.link.write(encoded, reset_after_send=False)
       xmits = xmits + 1
 
     print('Sent messages: %s (%s/second, %s/message)' % (xmits, xmits/float(repeat_seconds), repeat_seconds/float(xmits)))
