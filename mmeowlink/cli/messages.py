@@ -20,8 +20,6 @@ class SendMsgApp (messages.SendMsgApp):
     # get link
     # drain rx buffer
     self.pump = Pump(self.link, args.serial)
-    print args
-    print args.command
     if args.no_rf_prelude:
       return
     if not args.autoinit:

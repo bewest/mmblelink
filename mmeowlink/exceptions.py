@@ -3,3 +3,6 @@ class TimeoutException(Exception):
 
 class InvalidPacketReceived(Exception):
   pass
+
+class MMCommanderNotWriteable(Exception):
+  pass

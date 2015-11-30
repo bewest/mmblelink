@@ -10,9 +10,7 @@ import serial
 import decocare.lib as lib
 import decocare.fuser as fuser
 
-from mmeowlink.exceptions import InvalidPacketReceived, TimeoutException
-
-# from fourbysix import FourBySix
+from mmeowlink.exceptions import InvalidPacketReceived, TimeoutException, MMCommanderNotWriteable
 
 io  = logging.getLogger( )
 log = io.getChild(__name__)
@@ -21,6 +19,11 @@ class NotImplementedException (Exception):
   pass
 
 class Link( object ):
+  # How many repetitions can be sent by the underlying code in one go.
+  # It seems that the mmcommander firmware can crash if this is too high
+  MAX_REPETITION_BATCHSIZE = 255
+  VERSION_FETCH_COMMAND = 0x00
+
   __timeout__ = 1.000   # 1 second
 
   port = None
@@ -41,7 +44,15 @@ class Link( object ):
 
     self.serial = serial.Serial( self.port, 57600, **kwds )
 
+    self.mmcommander_version()
+
     return True
+
+  def mmcommander_version(self):
+    # Check it's a mmcommander device:
+    self.serial.write(chr(self.VERSION_FETCH_COMMAND))
+    version = self.serial.read(1)
+    log.info( 'MMCommander Firmare version: %s' % ord(version))
 
   def close( self ):
     log.info( '{agent} stopped using serial port'
@@ -50,11 +61,15 @@ class Link( object ):
     self.serial.close( )
     return True
 
-  def write( self, string, reset_after_send=True ):
+  def write( self, string, repetitions=1, timeout=None ):
+    if timeout is None:
+      timeout = self.__timeout__
+
     message = bytearray( string )
+    message_length = len(message)
 
     # Format of transmission is as follows. Note that the content is
-    # automatically converted to FourBySix
+    # automatically converted to radio (FourBySix) format
     #
     # Command | Length of Message | Repetititons | Message ...
     #
@@ -62,17 +77,36 @@ class Link( object ):
     #  0x1  Send - CRC already included
     #  0x81 Send - Add CRC-8 at the end
     #  0xC1 Send - Add CRC-16 at the end
-    arr = array.array('B', bytearray([0x1, len(message), 1]) + message)
+    #
+    # Repetitions must be <= 255 as it's a byte. So we loop according to the
+    # maximum batch size
+    remaining_messages = repetitions
+    while remaining_messages > 0:
+      if remaining_messages < self.MAX_REPETITION_BATCHSIZE:
+        transmissions = remaining_messages
+      else:
+        transmissions = self.MAX_REPETITION_BATCHSIZE
+      remaining_messages = remaining_messages - transmissions
 
-    r = self.serial.write( arr.tostring() )
-    io.info( 'usb.write.len: %s\n%s' % ( len( string ),
-                                         lib.hexdump( bytearray( string ) ) ) )
+      arr = array.array('B', bytearray([0x1, message_length, transmissions]) + message)
+
+      r = self.serial.write( arr.tostring() )
+      io.info( 'usb.write.len: %s\n%s' % ( len( string ),
+                                           lib.hexdump( bytearray( string ) ) ) )
+
+      # If the batch is large, the hardware can take a while to respond to us.
+      # Based on testing, this seems about right:
+      self.serial.timeout = timeout + (0.03 * transmissions)
+      confirmation = self.serial.read(3)
+      if bytearray( confirmation ) != bytearray([ 0x01, message_length, transmissions]):
+        import pdb; pdb.set_trace()
+        raise MMCommanderNotWriteable("Could not get confirmation from mmcommander that it is writeable. Has it been flashed correctly? Response was %s %s %s" % (confirmation[0], confirmation[1], confirmation[2]))
+
     return r
 
   def read( self, timeout=None ):
-    if not timeout:
+    if timeout is None:
       timeout = self.__timeout__
-
     self.serial.timeout = timeout
 
     # Result format:
@@ -87,8 +121,6 @@ class Link( object ):
     #
     # We also ignore messages where the CRC doesn't match our expectation
     #
-
-    # Wait until we've received a message we can understand.
     while True:
       state = self.serial.read(1)
       if (state is None) or len(state) == 0:

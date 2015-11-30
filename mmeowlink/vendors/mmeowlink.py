@@ -30,17 +30,11 @@ def configure_add_app (app, parser):
 
 def configure_app (app, parser):
   if app.parent.name == 'add':
-    """
-    print "MMEOWLINK CONFIG INNER", app, app.parent.name, app.name
-    """
+    pass
 def configure_parser (parser):
   pass
 def main (args, app):
-  """
-  print "MMEOWLINK", args, app
-  print "app commands", app.selected.name
-  """
-
+  pass
 
 use = Registry( )
 #
