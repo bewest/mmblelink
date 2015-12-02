@@ -21,7 +21,7 @@ class NotImplementedException (Exception):
 class Link( object ):
   # How many repetitions can be sent by the underlying code in one go.
   # It seems that the mmcommander firmware can crash if this is too high
-  MAX_REPETITION_BATCHSIZE = 20
+  MAX_REPETITION_BATCHSIZE = 100
   VERSION_FETCH_COMMAND = 0x00
 
   __timeout__ = 1.000   # 1 second
