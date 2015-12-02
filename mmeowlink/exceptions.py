@@ -1,4 +1,4 @@
-class TimeoutException(Exception):
+class CommsException(Exception):
   pass
 
 class InvalidPacketReceived(Exception):

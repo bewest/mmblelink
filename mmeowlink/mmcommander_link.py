@@ -10,7 +10,7 @@ import serial
 import decocare.lib as lib
 import decocare.fuser as fuser
 
-from mmeowlink.exceptions import InvalidPacketReceived, TimeoutException, MMCommanderNotWriteable
+from mmeowlink.exceptions import InvalidPacketReceived, CommsException, MMCommanderNotWriteable
 
 io  = logging.getLogger( )
 log = io.getChild(__name__)
@@ -21,7 +21,7 @@ class NotImplementedException (Exception):
 class Link( object ):
   # How many repetitions can be sent by the underlying code in one go.
   # It seems that the mmcommander firmware can crash if this is too high
-  MAX_REPETITION_BATCHSIZE = 255
+  MAX_REPETITION_BATCHSIZE = 20
   VERSION_FETCH_COMMAND = 0x00
 
   __timeout__ = 1.000   # 1 second
@@ -33,18 +33,20 @@ class Link( object ):
       self.__timeout__ = timeout
 
     self.port = port
+    self.serial = None
     self.open()
 
   def open( self, newPort=None, **kwds ):
-    log.info( '{agent} opening serial port'
-      .format(agent=self.__class__.__name__ ))
+    if not self.serial:
+      log.info( '{agent} opening serial port'
+        .format(agent=self.__class__.__name__ ))
 
-    if 'timeout' not in kwds:
-      kwds['timeout'] = self.__timeout__
+      if 'timeout' not in kwds:
+        kwds['timeout'] = self.__timeout__
 
-    self.serial = serial.Serial( self.port, 57600, **kwds )
-
-    self.mmcommander_version()
+      self.serial = serial.Serial( self.port, 57600, **kwds )
+      self.clear_receive_buffer('New port open')
+      self.mmcommander_version()
 
     return True
 
@@ -58,12 +60,14 @@ class Link( object ):
     log.info( '{agent} stopped using serial port'
       .format(agent=self.__class__.__name__ ))
 
+    self.clear_receive_buffer('Closing port')
     self.serial.close( )
     return True
 
   def write( self, string, repetitions=1, timeout=None ):
     if timeout is None:
       timeout = self.__timeout__
+    self.serial.write_timeout = timeout
 
     message = bytearray( string )
     message_length = len(message)
@@ -91,6 +95,9 @@ class Link( object ):
       arr = array.array('B', bytearray([0x1, message_length, transmissions]) + message)
 
       r = self.serial.write( arr.tostring() )
+      if r != len(arr):
+        raise CommsException("Could not write to serial port - Tried to write %s bytes but only wrote %s" % (len(arr), r))
+
       io.info( 'usb.write.len: %s\n%s' % ( len( string ),
                                            lib.hexdump( bytearray( string ) ) ) )
 
@@ -98,11 +105,34 @@ class Link( object ):
       # Based on testing, this seems about right:
       self.serial.timeout = timeout + (0.03 * transmissions)
       confirmation = self.serial.read(3)
-      if bytearray( confirmation ) != bytearray([ 0x01, message_length, transmissions]):
-        import pdb; pdb.set_trace()
-        raise MMCommanderNotWriteable("Could not get confirmation from mmcommander that it is writeable. Has it been flashed correctly? Response was %s %s %s" % (confirmation[0], confirmation[1], confirmation[2]))
+
+      if repetitions > 1:
+        if bytearray( confirmation ) != bytearray([ 0x01, message_length, transmissions]):
+          io.warn("usb.write.confirmation: Could not get confirmation of transmission from mmcommander. Response was %d %d %d, not %d %d %d" % (
+            ord(confirmation[0]), ord(confirmation[1]), ord(confirmation[2]),
+            0x01, message_length, transmissions
+          ))
+          self.clear_receive_buffer('Unclear message confirmation')
+
+
+    # This is a hack - which seems to occur because we occasionally don't get
+    # the right number of packets above.
 
     return r
+
+  # Tries to clear out the receive buffer, reading any outstanding bytes
+  def clear_receive_buffer(self, message):
+    orig_timeout = self.serial.timeout
+    self.serial.timeout = 0
+    loops = 0
+    print("clear_receive_buffer - %s - waiting for input" % message)
+    while True:
+      resp = self.serial.read()
+      if len(resp) == 0:
+        self.serial.timeout = orig_timeout
+        print("clear_receive_buffer - %s - looped %s times" % (message, loops))
+        return
+      loops = loops + 1
 
   def read( self, timeout=None ):
     if timeout is None:
@@ -124,13 +154,13 @@ class Link( object ):
     while True:
       state = self.serial.read(1)
       if (state is None) or len(state) == 0:
-        raise TimeoutException("Timeout reading message result")
+        raise CommsException("No response from pump after timeout %s seconds" % timeout)
 
       if ord(state) == 2:
         body_len = self.serial.read(1)
 
         if (body_len is None) or (len(body_len) == 0):
-          raise TimeoutException("Timeout reading length of response")
+          raise CommsException("Timeout reading length of response")
 
         # This is raised as a concern in the mmcommander code, so I
         # currently treat this as an error case
@@ -139,7 +169,7 @@ class Link( object ):
 
         message = self.serial.read(ord(body_len))
         if (message is None) or (len(message) == 0):
-          raise TimeoutException("Timeout reading message body")
+          raise CommsException("Timeout reading message body")
 
         return bytearray( message )
       else:

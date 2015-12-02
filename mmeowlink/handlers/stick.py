@@ -1,7 +1,7 @@
 
 from decocare import session, lib, commands
 from mmeowlink.packets.rf import Packet
-from mmeowlink.exceptions import InvalidPacketReceived, TimeoutException
+from mmeowlink.exceptions import InvalidPacketReceived, CommsException
 
 
 import logging
@@ -136,10 +136,10 @@ class Sender (object):
             self.respond(resp)
 
         return command
-      except InvalidPacketReceived:
-        log.error("Invalid Packet Received - retrying: %s of %s" % (retry_count, self.STANDARD_RETRY_COUNT))
-      except TimeoutException:
-        log.error("Timed out - retrying: %s of %s" % (retry_count, self.STANDARD_RETRY_COUNT))
+      except InvalidPacketReceived as e:
+        log.error("Invalid Packet Received - %s - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
+      except CommsException as e:
+        log.error("Timed out or other comms error - %s - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
       time.sleep(self.RETRY_BACKOFF * retry_count)
 
 class Repeater (Sender):
@@ -188,6 +188,6 @@ class Pump (session.Pump):
       try:
           sender = Sender(self.link)
           return sender(command)
-      except TimeoutException:
-          log.error("Timed out - retrying: %s of %s" % (retry_count, self.STANDARD_RETRY_COUNT))
+      except (CommsException, AssertionError) as e:
+          log.error("Timed out or other comms exception - %s - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
           time.sleep(self.RETRY_BACKOFF * retry_count)
