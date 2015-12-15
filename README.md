@@ -1,6 +1,8 @@
 
 # LICENSE
 
+[![Join the chat at https://gitter.im/oskarpearson/mmeowlink](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/oskarpearson/mmeowlink?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 MMeowlink Copyright (C) 2015 Oskar Pearson and Ben West.
 This program comes with ABSOLUTELY NO WARRANTY. See the LICENSE file
 for more details.
