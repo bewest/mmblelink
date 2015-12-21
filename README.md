@@ -81,7 +81,7 @@ it as follows:
     git clone https://github.com/oskarpearson/mmeowlink.git mmeowlink-source
     cd mmeowlink-source
     git checkout mmcommander
-    pip install -e .
+    sudo pip install -e .
 
 Then, add this to your openaps.ini. Note that you should have an existing
 "pump" section that you'll need to change to match this:
