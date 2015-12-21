@@ -125,12 +125,12 @@ class Link( object ):
     orig_timeout = self.serial.timeout
     self.serial.timeout = 0
     loops = 0
-    print("clear_receive_buffer - %s - waiting for input" % message)
+    log.debug("clear_receive_buffer - %s - waiting for input" % message)
     while True:
       resp = self.serial.read()
       if len(resp) == 0:
         self.serial.timeout = orig_timeout
-        print("clear_receive_buffer - %s - looped %s times" % (message, loops))
+        log.debug("clear_receive_buffer - %s - looped %s times" % (message, loops))
         return
       loops = loops + 1
 
