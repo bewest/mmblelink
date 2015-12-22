@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# PYTHON_ARGCOMPLETE_OK
+self=$0
+NAME=${1-help}
+shift
+PROGRAM="mmeowlink-${NAME}"
+COMMAND=$(which $PROGRAM | head -n 1)
+
+function help_message ( ) {
+  cat <<EOF
+  Usage:
+$self <cmd>
+
+Valid commands:
+  mmeowlink
+  mmeowlink env
+  mmeowlink scan
+  mmeowlink help - this message
+  mmeowlink emulate
+  mmeowlink monitor
+EOF
+}
+
+case $NAME in
+env)
+  echo PATH=$PATH
+  env
+  exit
+  ;;
+scan)
+  python -m mmeowlink.mmcommander_link $*
+  ;;
+duplex)
+  RX=$1
+  shift
+  TX=$1
+  shift
+  FORMAT=${1-text}
+  shift
+  # -s .50 -vv   --format markdown   --rx PumpRX 00:07:80:39:4C:37 --timeout 30 -o openaps-loops-pump-rx.txt
+  export TX RX
+  (
+  echo "PumpTX" $TX
+  echo "PumpRX" $RX
+  (python -m mmeowlink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ||
+  python -m mmeowlink.monitor --rx PumpTX "$TX" -f $FORMAT -o pump-tx-duplex.$FORMAT $* ) &
+  ( python -m mmeowlink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ||
+  python -m mmeowlink.monitor --rx PumpRX "$RX" -f $FORMAT -o pump-rx-duplex.$FORMAT $* ) &
+  )
+  ;;
+emulate)
+  python -m mmeowlink.handlers.pump $*
+  ;;
+monitor)
+  python -m mmeowlink.monitor $*
+  ;;
+help)
+  help_message
+  ;;
+*)
+  test -n "$COMMAND" && exec $COMMAND $*
+  ;;
+esac
