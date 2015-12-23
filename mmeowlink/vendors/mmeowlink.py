@@ -16,11 +16,8 @@ from datetime import datetime
 from dateutil import relativedelta
 from dateutil.parser import parse
 
-from .. cli import messages
-from .. import mmcommander_link
 from .. handlers.stick import Pump
-
-from mmcommander_scan import scan
+from .. link_builder import LinkBuilder
 
 def configure_use_app (app, parser):
   pass
@@ -37,17 +34,6 @@ def main (args, app):
   pass
 
 use = Registry( )
-#
-# @use( )
-# class scan (Use):
-#   """ scan for usb stick """
-#   def configure_app (self, app, parser):
-#     pass
-#   def scanner (self):
-#     from mmcommander_scan import scan
-#     return scan( )
-#   def main (self, args, app):
-#     return self.scanner( )
 
 def setup_logging (self):
   log = logging.getLogger(decocare.__name__)
@@ -61,9 +47,7 @@ def setup_logging (self):
 def setup_medtronic_link (self):
   serial = self.device.get('serial')
 
-  port = scan()
-
-  link = mmcommander_link.Link( port )
+  link = LinkBuilder().build()
   self.pump = Pump(link, serial)
 
 import logging

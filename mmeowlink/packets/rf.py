@@ -5,7 +5,7 @@ import struct
 from datetime import datetime
 from decocare import lib
 
-from mmeowlink.exceptions import InvalidPacketReceived
+from .. exceptions import InvalidPacketReceived
 
 _Packet = namedtuple('Packet', [
   'type', 'serial', 'op', 'payload', 'crc',

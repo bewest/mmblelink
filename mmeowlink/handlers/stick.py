@@ -1,17 +1,13 @@
 
 from decocare import session, lib, commands
-from mmeowlink.packets.rf import Packet
-from mmeowlink.exceptions import InvalidPacketReceived, CommsException
+from .. packets.rf import Packet
+from .. exceptions import InvalidPacketReceived, CommsException
 
 
 import logging
 import time
 
 from decocare import lib
-
-class NoPumpResponseToRepeatLoop(Exception):
-  pass
-
 
 io  = logging.getLogger( )
 log = io.getChild(__name__)
@@ -137,7 +133,7 @@ class Sender (object):
 
         return command
       except InvalidPacketReceived as e:
-        log.error("Invalid Packet Received - %s - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
+        log.error("Invalid Packet Received - '%s' - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
       except CommsException as e:
         log.error("Timed out or other comms error - %s - retrying: %s of %s" % (e, retry_count, self.STANDARD_RETRY_COUNT))
       time.sleep(self.RETRY_BACKOFF * retry_count)

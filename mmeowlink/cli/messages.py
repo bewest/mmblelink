@@ -1,9 +1,6 @@
-
-
 from decocare.helpers import messages
-from mmeowlink.mmcommander_link import Link
-from mmeowlink.vendors import mmcommander_scan
 from mmeowlink.handlers.stick import Pump
+from mmeowlink.link_builder import LinkBuilder
 
 class SendMsgApp (messages.SendMsgApp):
   """
@@ -14,8 +11,7 @@ class SendMsgApp (messages.SendMsgApp):
     return parser
 
   def prelude (self, args):
-    port = mmcommander_scan.scan()
-    self.link = link = Link( port=port )
+    self.link = link = LinkBuilder().build()
     link.open()
     # get link
     # drain rx buffer
