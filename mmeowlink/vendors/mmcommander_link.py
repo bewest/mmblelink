@@ -20,9 +20,9 @@ class MMCommanderLink(SerialInterface):
   VERSION_FETCH_COMMAND = 0x00
   TIMEOUT = 1
 
-  def __init__(self, port):
+  def __init__(self, device):
     self.timeout = 1
-    self.port = port
+    self.device = device
     self.speed = 57600
 
     SerialInterface.__init__(self)
@@ -30,13 +30,15 @@ class MMCommanderLink(SerialInterface):
 
   def check_setup(self):
     # Check it's a mmcommander device:
-    self.serial.write(chr(self.VERSION_FETCH_COMMAND))
-    version = self.serial.read(1)
-    log.info( 'MMCommander Firmare version: %s' % ord(version))
+    # We should get a response from the firmware immediately, otherwise
+    # it's possible the device we're trying to query is not a MMCommander
+    # device
+    self.serial.timeout = self.serial.write_timeout = 1
 
     self.serial.write(chr(self.VERSION_FETCH_COMMAND))
     version = self.serial.read(1)
-    log.info( 'MMCommander Firmare version: %s' % ord(version))
+    if len(version) == 0:
+      raise CommsException("Could not get version from mmcommander device. Have you got the right port/device and radio_type?")
 
   def write( self, string, repetitions=1, timeout=None ):
     if timeout is None:

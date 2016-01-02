@@ -31,6 +31,7 @@
 import os
 import serial
 import time
+from .. exceptions import CommsException
 
 class SerialRfSpy:
   CMD_GET_STATE = 1
@@ -40,17 +41,22 @@ class SerialRfSpy:
   CMD_SEND_AND_LISTEN = 5
 
   def __init__(self, ser):
+    self.default_write_timeout = 1
     self.ser = ser
     self.buf = bytearray()
 
-  def do_command(self, command, param=""):
+  def do_command(self, command, param="", timeout=0):
     self.send_command(command, param)
-    return self.get_response()
+    return self.get_response(timeout=timeout)
 
-  def send_command(self, command, param=""):
+  def send_command(self, command, param="", timeout=1):
+    self.ser.write_timeout = timeout
+
     self.ser.write(chr(command))
     if len(param) > 0:
       self.ser.write(param)
+
+    self.ser.write_timeout = self.default_write_timeout
 
   def get_response(self, timeout=0):
     start = time.time()
@@ -68,19 +74,15 @@ class SerialRfSpy:
       time.sleep(0.005)
 
   def sync(self):
-    while 1:
-      self.send_command(self.CMD_GET_STATE)
-      data = self.get_response(1)
-      if data == "OK":
-        print "RileyLink " + data
-        break
-      print "retry CMD_GET_STATE"
+    self.send_command(self.CMD_GET_STATE)
+    status = self.get_response(timeout=1)
+    if status == "OK":
+      print "subg_rfspy status: " + status
 
-    while 1:
-      self.send_command(self.CMD_GET_VERSION)
-      data = self.get_response(1)
-      if len(data) >= 3:
-        print "Version: " + data
-        break
-      print "retry CMD_GET_VERSION"
+    self.send_command(self.CMD_GET_VERSION)
+    version = self.get_response(timeout=1)
+    if len(version) >= 3:
+      print "Version: " + version
 
+    if not status or not version:
+      raise CommsException("Could not get subg_rfspy state or version. Have you got the right port/device and radio_type?")

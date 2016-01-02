@@ -14,7 +14,7 @@ class SerialInterface (object):
       log.info( '{agent} opening serial port'
         .format(agent=self.__class__.__name__ ))
 
-      self.serial = serial.Serial( self.port, self.speed )
+      self.serial = serial.Serial( self.device, self.speed )
       self.clear_receive_buffer('New port open')
       self.check_setup()
 

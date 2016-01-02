@@ -22,9 +22,9 @@ class SubgRfspyLink(SerialInterface):
   REPETITION_DELAY = 0
   MAX_REPETITION_BATCHSIZE = 250
 
-  def __init__(self, port):
+  def __init__(self, device):
     self.timeout = 1
-    self.port = port
+    self.device = device
     self.speed = 19200
     self.channel = 0
 
@@ -35,8 +35,9 @@ class SubgRfspyLink(SerialInterface):
 
     self.serial_rf_spy.sync()
 
-    # Check it's a SerialRfSpy device
-    version = self.serial_rf_spy.do_command(self.serial_rf_spy.CMD_GET_VERSION)
+    # Check it's a SerialRfSpy device by retrieving the firmware version
+    self.serial_rf_spy.send_command(self.serial_rf_spy.CMD_GET_VERSION, timeout=1)
+    version = self.serial_rf_spy.get_response(timeout=1)
 
     log.debug( 'serial_rf_spy Firmare version: %s' % version)
 
@@ -55,7 +56,7 @@ class SubgRfspyLink(SerialInterface):
 
       message = chr(self.channel) + chr(transmissions - 1) + chr(repetition_delay) + FourBySix.encode(string)
 
-      rf_spy.do_command(rf_spy.CMD_SEND_PACKET, message)
+      rf_spy.do_command(rf_spy.CMD_SEND_PACKET, message, timeout=timeout)
 
   def read( self, timeout=None ):
     rf_spy = self.serial_rf_spy
@@ -67,7 +68,7 @@ class SubgRfspyLink(SerialInterface):
     timeout_ms_high = int(timeout_ms / 256)
     timeout_ms_low = int(timeout_ms - (timeout_ms_high * 256))
 
-    resp = rf_spy.do_command(SerialRfSpy.CMD_GET_PACKET, chr(self.channel) + chr(timeout_ms_high) + chr(timeout_ms_low))
+    resp = rf_spy.do_command(SerialRfSpy.CMD_GET_PACKET, chr(self.channel) + chr(timeout_ms_high) + chr(timeout_ms_low), timeout=timeout + 1)
     if not resp:
       raise CommsException("Did not get a response")
 

@@ -83,16 +83,53 @@ it as follows:
     git checkout mmcommander
     sudo pip install -e .
 
-Then, add this to your openaps.ini. Note that you should have an existing
-"pump" section that you'll need to change to match this:
+## Add the vendor:
+
+    openaps vendor add --path . mmeowlink.vendors.mmeowlink
+
+This will create an entry like this in your openaps.ini:
 
     [vendor "mmeowlink.vendors.mmeowlink"]
     path = .
     module = mmeowlink.vendors.mmeowlink
 
+
+## Remove any existing pump device
+
+Note that you might need to delete any existing 'pump' device before running
+the add, so as to disassociate the pump device from CareLink.
+
+If you already have the loop running with CareLink, you should remove the
+existing pump definition:
+
+    openaps device remove pump
+
+This will remove this section from your openaps.ini:
+
+    [device "pump"]
+    extra = pump.ini
+
+## Add the new pump device
+
+The parameter format is as follows:
+
+    openaps device add pump mmeowlink <radio_type> <port> <serial_number_of_pump>
+
+For example, if you're on an Edison with the subg_rfspy firmware, with pump
+serial number 12345 your command would be:
+
+    openaps device add pump mmeowlink subg_rfspy /dev/ttyMFD1 12345
+
+Once run, this would appear in your openaps.ini file:
+
     [device "pump"]
     vendor = mmeowlink.vendors.mmeowlink
     extra = pump.ini
 
-You should then be able to run `openaps report invoke read_clock.json` or
-similar.
+The pump.ini file would contain the following:
+
+    [device "pump"]
+    serial = 12345
+    port = /dev/ttyMFD1
+    radio_type = subg_rfspy
+

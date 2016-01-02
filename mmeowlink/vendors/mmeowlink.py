@@ -1,8 +1,6 @@
 
 """
-mmeowlink - openaps driver for meowlink
-This emulates the stick from decocare, Based on the mmblelink code,
-which talks to the Rileylink.
+mmeowlink - openaps driver for cc1111/cc1110 devices
 """
 from openaps.uses.use import Use
 from openaps.uses.registry import Registry
@@ -26,10 +24,21 @@ def configure_add_app (app, parser):
   medtronic.configure_add_app(app, parser)
 
 def configure_app (app, parser):
-  if app.parent.name == 'add':
-    pass
-def configure_parser (parser):
-  pass
+  parser.add_argument(
+    'radio_type',
+    help='Radio type: mmcommander or subg_rfspy'
+  )
+  parser.add_argument(
+    'port',
+    help='Radio serial port. e.g. /dev/ttyACM0 or /dev/ttyMFD1'
+  )
+
+def get_params(self, args):
+  params = {key: args.__dict__.get(key) for key in (
+    'radio_type',
+    'port'
+  )}
+
 def main (args, app):
   pass
 
@@ -46,8 +55,10 @@ def setup_logging (self):
 
 def setup_medtronic_link (self):
   serial = self.device.get('serial')
+  radio_type = self.device.get('radio_type')
+  port = self.device.get('port')
 
-  link = LinkBuilder().build()
+  link = LinkBuilder().build(radio_type, port)
   self.pump = Pump(link, serial)
 
 import logging
@@ -80,6 +91,8 @@ def substitute (name, usage, Master=MedtronicTask, Original=medtronic.MedtronicT
 
 def set_config (args, device):
   device.add_option('serial', args.serial)
+  device.add_option('radio_type', args.radio_type)
+  device.add_option('port', args.port)
 
 def display_device (device):
   return ''
