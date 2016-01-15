@@ -22,10 +22,10 @@ class SubgRfspyLink(SerialInterface):
   REPETITION_DELAY = 0
   MAX_REPETITION_BATCHSIZE = 250
 
-  def __init__(self, device):
+  def __init__(self, device, **kwds):
     self.timeout = 1
     self.device = device
-    self.speed = 19200
+    self.speed = int(kwds.get('baud', 19200))
     self.channel = 0
 
     self.open()

@@ -32,6 +32,14 @@ def configure_app (app, parser):
     'port',
     help='Radio serial port. e.g. /dev/ttyACM0 or /dev/ttyMFD1'
   )
+  """
+  parser.add_argument(
+    '--baud',
+    type=int,
+    default=19200,
+    help='Baud rate {default}'
+  )
+  """
 
 def get_params(self, args):
   params = {key: args.__dict__.get(key) for key in (
@@ -57,8 +65,9 @@ def setup_medtronic_link (self):
   serial = self.device.get('serial')
   radio_type = self.device.get('radio_type')
   port = self.device.get('port')
+  baud = self.device.get('baud', 19200)
 
-  link = LinkBuilder().build(radio_type, port)
+  link = LinkBuilder().build(radio_type, port, baud=baud)
   self.pump = Pump(link, serial)
 
 import logging
